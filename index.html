@@ -6,682 +6,197 @@
   <title>AutoPortfolio Builder</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .step-line { transition: all 0.3s ease; }
     .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-    .template-card:hover { transform: translateY(-4px); }
     .fade-in { animation: fadeIn 0.5s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .modal-overlay { animation: modalIn 0.3s ease-out; }
     @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
-    .preview-iframe { transition: all 0.3s ease; }
-    .tab-active { border-bottom: 3px solid #3B82F6; color: #3B82F6; }
+    .code-block { font-family: 'Courier New', monospace; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
   <div id="app"></div>
-  <div id="modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 modal-overlay"></div>
+  <div id="modal" class="fixed inset-0 bg-black/90 z-50 hidden overflow-auto"></div>
 
   <script>
-    const API_URL = 'http://localhost:5000/api';
-    
-    const state = {
+    var state = {
       step: 1,
       formData: {
         fullName: 'Alex Johnson',
         professionalTitle: 'Full Stack Developer',
-        bio: 'Passionate developer with 5+ years of experience building scalable web applications. Specialized in React, Node.js, and cloud architectures.',
+        bio: 'Passionate developer with 5+ years building scalable web applications.',
         profileImage: '',
-        socialLinks: { github: 'https://github.com/alex', linkedin: 'https://linkedin.com/in/alex', twitter: 'https://twitter.com/alex', blog: '' },
-        skills: ['React', 'Node.js', 'TypeScript', 'Python', 'AWS', 'Docker', 'MongoDB', 'PostgreSQL'],
-        projects: [
-          { name: 'E-Commerce Platform', description: 'Full-stack e-commerce solution with real-time inventory management', liveUrl: 'https://shop.demo.com', githubUrl: 'https://github.com/alex/shop' },
-          { name: 'Task Management App', description: 'Collaborative task management with real-time updates', liveUrl: 'https://tasks.demo.com', githubUrl: 'https://github.com/alex/tasks' }
-        ],
-        experience: [{ jobTitle: 'Senior Developer', company: 'Tech Corp', startDate: 'Jan 2021', endDate: 'Present', bullets: ['Led development of microservices architecture', 'Reduced API latency by 40%', 'Mentored junior developers'] }],
+        socialLinks: { github: 'https://github.com/alex', linkedin: 'https://linkedin.com/in/alex' },
+        skills: ['React', 'Node.js', 'TypeScript', 'Python', 'AWS'],
+        projects: [{ name: 'E-Commerce Platform', description: 'Full-stack solution with real-time inventory', liveUrl: 'https://shop.demo.com', githubUrl: 'https://github.com/alex/shop' }],
+        experience: [{ jobTitle: 'Senior Developer', company: 'Tech Corp', startDate: 'Jan 2021', endDate: 'Present', bullets: ['Led microservices architecture', 'Reduced API latency by 40%'] }],
         education: { degree: 'B.S. Computer Science', institution: 'State University', graduationYear: '2018' },
-        resumeUrl: 'https://demo.com/resume.pdf',
-        brandColor: '#3B82F6',
-        themePreference: 'Minimalist'
+        brandColor: '#3B82F6'
       },
       formStep: 1,
-      skillInput: '',
       selectedTemplate: null,
-      previewTemplate: null,
-      githubToken: '',
-      repoName: '',
-      tokenValid: null,
-      username: '',
-      deploymentResult: null,
-      loading: false,
-      error: '',
-      downloadFormat: 'zip'
+      showCode: null
     };
 
-    const templates = [
-      { id: 'Terminal', name: 'The Terminal', desc: 'Dark CLI-style with monospace fonts', icon: '>_', gradient: 'from-gray-900 to-black', textColor: '#3B82F6' },
-      { id: 'Glassmorphism', name: 'Glassmorphism', desc: 'Modern frosted glass effect', icon: '◐', gradient: 'from-purple-900 to-blue-900', textColor: '#8b5cf6' },
-      { id: 'Sidebar', name: 'The Sidebar', desc: 'Classic navigation layout', icon: '☰', gradient: 'from-indigo-900 to-purple-900', textColor: '#3B82F6' },
-      { id: 'Gradient', name: 'The Gradient', desc: 'Bold gradients with animations', icon: '★', gradient: 'from-pink-600 to-purple-600', textColor: '#ec4899' },
-      { id: 'Minimalist', name: 'Minimalist', desc: 'Clean elegant design', icon: '◇', gradient: 'from-gray-100 to-white', textColor: '#6b7280' },
-      { id: 'Magazine', name: 'Magazine', desc: 'Editorial style layout', icon: 'M', gradient: 'from-amber-800 to-amber-600', textColor: '#d97706' },
-      { id: 'Cyberpunk', name: 'Cyberpunk', desc: 'Neon glow cyber aesthetic', icon: '⚡', gradient: 'from-cyan-900 to-pink-900', textColor: '#06b6d4' },
-      { id: 'Vintage', name: 'Vintage', desc: 'Classic print-inspired design', icon: '✦', gradient: 'from-amber-100 to-orange-100', textColor: '#92400e' },
-      { id: 'Neobrutalism', name: 'Neobrutalism', desc: 'Bold borders and solid shadows', icon: '■', gradient: 'from-rose-500 to-orange-500', textColor: '#f43f5e' },
-      { id: 'Startup', name: 'Startup', desc: 'Modern SaaS landing style', icon: '▲', gradient: 'from-violet-600 to-indigo-600', textColor: '#7c3aed' }
+    var templates = [
+      { id: 'Terminal', name: 'The Terminal', desc: 'Dark CLI-style', icon: '>_', bg: 'from-gray-900 to-black', textColor: '#00ff00' },
+      { id: 'Glassmorphism', name: 'Glassmorphism', desc: 'Modern frosted glass', icon: '◐', bg: 'from-purple-900 to-blue-900', textColor: '#8b5cf6' },
+      { id: 'Sidebar', name: 'The Sidebar', desc: 'Classic navigation', icon: '☰', bg: 'from-indigo-900 to-purple-900', textColor: '#6366f1' },
+      { id: 'Gradient', name: 'The Gradient', desc: 'Bold gradients', icon: '★', bg: 'from-pink-600 to-purple-600', textColor: '#ec4899' },
+      { id: 'Minimalist', name: 'Minimalist', desc: 'Clean elegant', icon: '◇', bg: 'from-gray-100 to-white', textColor: '#374151' },
+      { id: 'Magazine', name: 'Magazine', desc: 'Editorial style', icon: 'M', bg: 'from-amber-800 to-amber-600', textColor: '#d97706' },
+      { id: 'Cyberpunk', name: 'Cyberpunk', desc: 'Neon cyber aesthetic', icon: '⚡', bg: 'from-cyan-900 to-pink-900', textColor: '#06b6d4' },
+      { id: 'Vintage', name: 'Vintage', desc: 'Print-inspired', icon: '✦', bg: 'from-amber-100 to-orange-100', textColor: '#92400e' },
+      { id: 'Neobrutalism', name: 'Neobrutalism', desc: 'Bold borders', icon: '■', bg: 'from-rose-500 to-orange-500', textColor: '#f43f5e' },
+      { id: 'Startup', name: 'Startup', desc: 'SaaS landing style', icon: '▲', bg: 'from-violet-600 to-indigo-600', textColor: '#7c3aed' }
     ];
 
     function render() {
-      const app = document.getElementById('app');
-      
-      let content = `
-        <header class="py-6 px-4">
-          <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div>
-              <h1 class="text-2xl font-bold text-white">AutoPortfolio Builder</h1>
-              <p class="text-purple-200 text-sm mt-1">Create your professional developer portfolio</p>
-            </div>
-            <div class="flex gap-3">
-              <button onclick="showAllPreviews()" class="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition text-sm">Preview All</button>
-              <button onclick="downloadCode()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm">Download Code</button>
-            </div>
-          </div>
-        </header>
-        <main class="px-4 pb-12">
-          <div class="max-w-7xl mx-auto">
-      `;
-
-      if (state.step < 4) {
-        content += `
-          <div class="flex items-center justify-center gap-2 mb-8">
-            ${[1, 2, 3].map(s => `
-              <div class="w-8 h-8 rounded-full flex items-center justify-center font-semibold ${state.step >= s ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'}">
-                ${s}
-              </div>
-              ${s < 3 ? `<div class="w-12 h-0.5 ${state.step > s ? 'bg-blue-500' : 'bg-white/20'}"></div>` : ''}
-            `).join('')}
-          </div>
-        `;
-      }
-
+      var app = document.getElementById('app');
+      var content = '<header class="py-6 px-4"><div class="max-w-7xl mx-auto"><h1 class="text-3xl font-bold text-white">AutoPortfolio Builder</h1><p class="text-purple-200 text-sm mt-1">Create & Preview Your Portfolio</p></div></header>';
+      content += '<main class="px-4 pb-12"><div class="max-w-6xl mx-auto">';
       if (state.step === 1) content += renderForm();
       else if (state.step === 2) content += renderGallery();
-      else if (state.step === 3) content += renderDeploy();
-      else if (state.step === 4) content += renderSuccess();
-
-      content += `</div></main><footer class="py-6 text-center text-white/50 text-sm">Built with React & Node.js</footer>`;
-      
+      else if (state.step === 3) content += renderCodeView();
+      content += '</div></main>';
       app.innerHTML = content;
       attachListeners();
     }
 
     function renderForm() {
-      const f = state.formData;
-      const s = state.formStep;
-      
-      let formContent = '';
+      var f = state.formData;
+      var s = state.formStep;
+      var form = '';
       
       if (s === 1) {
-        formContent = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Basic Information</h2>
-          <div class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                <input type="text" id="fullName" value="${f.fullName}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Professional Title</label>
-                <input type="text" id="professionalTitle" value="${f.professionalTitle}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-              <textarea id="bio" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg">${f.bio}</textarea>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Profile Image URL</label>
-              <input type="url" id="profileImage" value="${f.profileImage}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://example.com/photo.jpg">
-            </div>
-          </div>
-        `;
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Basic Info</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Full Name</label><input type="text" id="fullName" value="' + f.fullName + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Title</label><input type="text" id="professionalTitle" value="' + f.professionalTitle + '" class="w-full px-4 py-3 rounded-lg"></div></div><div class="mb-4"><label class="block text-sm text-purple-200 mb-1">Bio</label><textarea id="bio" rows="3" class="w-full px-4 py-3 rounded-lg">' + f.bio + '</textarea></div>';
       } else if (s === 2) {
-        formContent = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Social Links</h2>
-          <div class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">GitHub</label>
-                <input type="url" id="github" value="${f.socialLinks.github}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
-                <input type="url" id="linkedin" value="${f.socialLinks.linkedin}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
-                <input type="url" id="twitter" value="${f.socialLinks.twitter}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Personal Blog</label>
-                <input type="url" id="blog" value="${f.socialLinks.blog}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Resume URL (PDF)</label>
-              <input type="url" id="resumeUrl" value="${f.resumeUrl}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-            </div>
-          </div>
-        `;
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Social Links</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">GitHub URL</label><input type="url" id="github" value="' + f.socialLinks.github + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">LinkedIn URL</label><input type="url" id="linkedin" value="' + f.socialLinks.linkedin + '" class="w-full px-4 py-3 rounded-lg"></div></div>';
       } else if (s === 3) {
-        formContent = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Technical Skills</h2>
-          <div class="space-y-4">
-            <div class="flex gap-3">
-              <input type="text" id="skillInput" value="${state.skillInput}" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg" placeholder="Type a skill and press Enter">
-              <button onclick="addSkill()" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add</button>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              ${f.skills.map((skill, i) => `
-                <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full flex items-center gap-2">
-                  ${skill}
-                  <button onclick="removeSkill(${i})" class="w-5 h-5 rounded-full bg-blue-200 text-blue-700 flex items-center justify-center hover:bg-blue-300">×</button>
-                </span>
-              `).join('')}
-            </div>
-          </div>
-        `;
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Skills</h2><div class="flex gap-3 mb-4"><input type="text" id="skillInput" class="flex-1 px-4 py-3 rounded-lg" placeholder="Type skill"><button onclick="addSkill()" class="px-6 py-3 bg-green-500 text-white rounded-lg">Add</button></div><div class="flex flex-wrap gap-2">' + f.skills.map(function(skill, i) { return '<span class="px-4 py-2 bg-purple-500/30 text-white rounded-full">' + skill + '<button onclick="removeSkill(' + i + ')" class="ml-2 text-purple-300 hover:text-white">x</button></span>'; }).join('') + '</div>';
       } else if (s === 4) {
-        formContent = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Featured Projects</h2>
-          <div class="space-y-4">
-            ${f.projects.map((p, i) => `
-              <div class="p-4 border border-gray-200 rounded-lg space-y-3">
-                <div class="flex justify-between items-center">
-                  <h3 class="font-semibold text-gray-700">Project ${i + 1}</h3>
-                  ${f.projects.length > 1 ? `<button onclick="removeProject(${i})" class="text-red-500 hover:text-red-700">Remove</button>` : ''}
-                </div>
-                <div class="grid gap-4 md:grid-cols-2">
-                  <input type="text" id="projName${i}" value="${p.name}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Project Name">
-                  <input type="url" id="projLive${i}" value="${p.liveUrl}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Live Demo URL">
-                  <input type="url" id="projGithub${i}" value="${p.githubUrl}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="GitHub URL">
-                </div>
-                <textarea id="projDesc${i}" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Description">${p.description}</textarea>
-              </div>
-            `).join('')}
-            <button onclick="addProject()" class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500">+ Add Another Project</button>
-          </div>
-        `;
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Projects</h2>' + f.projects.map(function(p, i) { return '<div class="glass p-4 rounded-xl mb-4"><input type="text" id="projName' + i + '" value="' + p.name + '" class="w-full px-3 py-2 rounded mb-2" placeholder="Project Name"><textarea id="projDesc' + i + '" rows="2" class="w-full px-3 py-2 rounded mb-2" placeholder="Description">' + p.description + '</textarea><div class="grid grid-cols-2 gap-2"><input type="url" id="projLive' + i + '" value="' + p.liveUrl + '" class="px-3 py-2 rounded" placeholder="Live URL"><input type="url" id="projGithub' + i + '" value="' + p.githubUrl + '" class="px-3 py-2 rounded" placeholder="GitHub URL"></div></div>'; }).join('') + '<button onclick="addProject()" class="w-full py-3 border-2 border-dashed border-white/30 text-white/70 rounded-lg hover:border-white/50">+ Add Project</button>';
       } else if (s === 5) {
-        formContent = `
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Experience & Style</h2>
-          <div class="space-y-6">
-            <div>
-              <h3 class="font-semibold text-gray-700 mb-4">Work Experience</h3>
-              ${f.experience.map((exp, i) => `
-                <div class="p-4 border border-gray-200 rounded-lg mb-4">
-                  <div class="flex justify-between mb-3">
-                    <span class="font-medium">Position ${i + 1}</span>
-                    ${f.experience.length > 1 ? `<button onclick="removeExperience(${i})" class="text-red-500">Remove</button>` : ''}
-                  </div>
-                  <div class="grid gap-4 md:grid-cols-2 mb-3">
-                    <input type="text" id="expTitle${i}" value="${exp.jobTitle}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Job Title">
-                    <input type="text" id="expCompany${i}" value="${exp.company}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Company">
-                    <input type="text" id="expStart${i}" value="${exp.startDate}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Start Date">
-                    <input type="text" id="expEnd${i}" value="${exp.endDate}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="End Date">
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-600 mb-2 block">Responsibilities</label>
-                    ${exp.bullets.map((b, j) => `
-                      <input type="text" id="expBullet${i}_${j}" value="${b}" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-2" placeholder="Describe responsibility...">
-                    `).join('')}
-                    <button onclick="addBullet(${i})" class="text-blue-500 text-sm hover:underline">+ Add Responsibility</button>
-                  </div>
-                </div>
-              `).join('')}
-              <button onclick="addExperience()" class="text-blue-500 hover:underline">+ Add Work Experience</button>
-            </div>
-            <div>
-              <h3 class="font-semibold text-gray-700 mb-4">Education</h3>
-              <div class="grid gap-4 md:grid-cols-2">
-                <input type="text" id="eduDegree" value="${f.education.degree}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Degree">
-                <input type="text" id="eduInstitution" value="${f.education.institution}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Institution">
-                <input type="text" id="eduYear" value="${f.education.graduationYear}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Graduation Year">
-              </div>
-            </div>
-            <div>
-              <h3 class="font-semibold text-gray-700 mb-4">Portfolio Style</h3>
-              <div class="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label class="block text-sm text-gray-600 mb-2">Primary Brand Color</label>
-                  <input type="color" id="brandColor" value="${f.brandColor}" class="w-full h-12 rounded-lg cursor-pointer">
-                </div>
-                <div>
-                  <label class="block text-sm text-gray-600 mb-2">Theme Preference</label>
-                  <select id="themePreference" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                    ${templates.map(t => `<option value="${t.id}" ${f.themePreference === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Experience & Style</h2>' + f.experience.map(function(exp, i) { return '<div class="glass p-4 rounded-xl mb-4"><div class="grid grid-cols-2 gap-2 mb-2"><input type="text" id="expTitle' + i + '" value="' + exp.jobTitle + '" class="px-3 py-2 rounded" placeholder="Job Title"><input type="text" id="expCompany' + i + '" value="' + exp.company + '" class="px-3 py-2 rounded" placeholder="Company"></div></div>'; }).join('') + '<div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Degree</label><input type="text" id="eduDegree" value="' + f.education.degree + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Institution</label><input type="text" id="eduInstitution" value="' + f.education.institution + '" class="w-full px-4 py-3 rounded-lg"></div></div><div><label class="block text-sm text-purple-200 mb-1">Brand Color</label><input type="color" id="brandColor" value="' + f.brandColor + '" class="w-full h-12 rounded-lg cursor-pointer"></div>';
       }
-
-      return `
-        <div class="glass rounded-2xl shadow-2xl p-8 max-w-3xl mx-auto fade-in">
-          <div class="mb-8">
-            <div class="flex justify-between mb-2">
-              ${[1, 2, 3, 4, 5].map(step => `
-                <div class="w-2 h-2 rounded-full ${state.formStep >= step ? 'bg-blue-500' : 'bg-gray-300'}"></div>
-              `).join('')}
-            </div>
-            <p class="text-gray-500 text-sm">Step ${state.formStep} of 5</p>
-          </div>
-          ${state.error ? `<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">${state.error}</div>` : ''}
-          ${formContent}
-          <div class="flex justify-between mt-8">
-            <button onclick="prevStep()" class="px-6 py-3 rounded-lg font-medium ${state.formStep === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}">Previous</button>
-            <button onclick="nextStep()" class="px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600">${state.formStep === 5 ? 'Choose Template' : 'Next'}</button>
-          </div>
-        </div>
-      `;
+      
+      return '<div class="glass rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto fade-in"><div class="mb-6"><div class="flex gap-2 mb-2">' + [1,2,3,4,5].map(function(x) { return '<div class="w-3 h-3 rounded-full ' + (state.formStep >= x ? 'bg-blue-500' : 'bg-gray-300') + '"></div>'; }).join('') + '</div><p class="text-gray-500 text-sm">Step ' + state.formStep + ' of 5</p></div>' + form + '<div class="flex justify-between mt-6"><button onclick="prevStep()" class="px-6 py-3 ' + (s === 1 ? 'text-gray-400' : 'text-white hover:bg-white/10') + ' rounded-lg">' + (s === 1 ? '' : 'Previous') + '</button><button onclick="nextStep()" class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">' + (s === 5 ? 'Choose Template' : 'Next') + '</button></div></div>';
     }
 
     function renderGallery() {
-      return `
-        <button onclick="goBack(1)" class="flex items-center gap-2 text-white/80 hover:text-white mb-6">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          Back to Form
-        </button>
-        <div class="text-center mb-8">
-          <h2 class="text-3xl font-bold text-white mb-2">Choose Your Template</h2>
-          <p class="text-purple-200">${templates.length} templates available - Click to preview</p>
-        </div>
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          ${templates.map(t => `
-            <div class="template-card bg-white rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 hover:ring-4 hover:ring-blue-500" onclick="showPreview('${t.id}')">
-              <div class="h-48 bg-gradient-to-br ${t.gradient} p-6 flex items-center justify-center relative">
-                <div class="text-white/90 text-5xl font-bold">${t.icon}</div>
-                ${state.selectedTemplate === t.id ? '<div class="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Selected</div>' : ''}
-              </div>
-              <div class="p-4">
-                <h3 class="font-semibold text-gray-800">${t.name}</h3>
-                <p class="text-gray-500 text-sm mt-1">${t.desc}</p>
-                <div class="flex gap-2 mt-4">
-                  <button onclick="event.stopPropagation(); showPreview('${t.id}')" class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">Preview</button>
-                  <button onclick="event.stopPropagation(); selectTemplate('${t.id}')" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm">Select</button>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        ${state.selectedTemplate ? `
-          <div class="mt-8 text-center">
-            <button onclick="goToDeploy()" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-600 transition">
-              Deploy "${templates.find(t => t.id === state.selectedTemplate)?.name}" Template
-            </button>
-          </div>
-        ` : ''}
-      `;
+      return '<button onclick="goBack(1)" class="mb-6 text-white/80 hover:text-white">Back to Form</button><h2 class="text-3xl font-bold text-white mb-2">Choose Template</h2><p class="text-purple-200 mb-8">10 templates available</p><div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">' + templates.map(function(t) { return '<div class="glass rounded-xl overflow-hidden shadow-xl cursor-pointer hover:scale-105 transition" onclick="selectTemplate(\'' + t.id + '\')"><div class="h-40 bg-gradient-to-br ' + t.bg + ' flex items-center justify-center"><span class="text-5xl text-white/80">' + t.icon + '</span></div><div class="p-4"><h3 class="font-bold text-gray-800">' + t.name + '</h3><p class="text-gray-500 text-sm mt-1">' + t.desc + '</p><div class="flex gap-2 mt-4"><button onclick="event.stopPropagation(); showPreview(\'' + t.id + '\')" class="flex-1 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">Preview</button><button onclick="event.stopPropagation(); selectTemplate(\'' + t.id + '\')" class="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">Select</button></div></div></div>'; }).join('') + '</div>';
     }
 
-    function renderDeploy() {
-      const templateName = templates.find(t => t.id === state.selectedTemplate)?.name || state.selectedTemplate;
-      return `
-        <button onclick="goBack(2)" class="flex items-center gap-2 text-white/80 hover:text-white mb-6">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          Back to Templates
-        </button>
-        <div class="grid gap-8 lg:grid-cols-2">
-          <div class="glass rounded-2xl shadow-2xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Deploy to GitHub</h2>
-            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-              <h3 class="font-semibold text-blue-800 mb-2">Selected Template</h3>
-              <p class="text-blue-600">${templateName}</p>
-            </div>
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h3 class="font-semibold text-gray-700 mb-2">Portfolio Summary</h3>
-              <p class="text-gray-600"><strong>Name:</strong> ${state.formData.fullName || 'Not specified'}</p>
-              <p class="text-gray-600"><strong>Title:</strong> ${state.formData.professionalTitle || 'Not specified'}</p>
-              <p class="text-gray-600"><strong>Skills:</strong> ${state.formData.skills.length} skills</p>
-              <p class="text-gray-600"><strong>Projects:</strong> ${state.formData.projects.length} projects</p>
-            </div>
-            ${state.error ? `<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">${state.error}</div>` : ''}
-            <div class="space-y-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">GitHub Personal Access Token</label>
-                <div class="flex gap-3">
-                  <input type="password" id="githubToken" value="${state.githubToken}" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg" placeholder="ghp_xxxxxxxxxxxx">
-                  <button onclick="verifyToken()" class="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Verify</button>
-                </div>
-                ${state.tokenValid === true ? `<p class="mt-2 text-sm text-green-600">✓ Connected as ${state.username}</p>` : ''}
-                ${state.tokenValid === false ? `<p class="mt-2 text-sm text-red-600">Invalid token</p>` : ''}
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Repository Name</label>
-                <input type="text" id="repoName" value="${state.repoName}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="my-portfolio">
-              </div>
-              <button onclick="deploy()" ${state.tokenValid !== true ? 'disabled' : ''} class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 disabled:opacity-50">
-                ${state.loading ? 'Deploying...' : 'Deploy Portfolio'}
-              </button>
-            </div>
-          </div>
-          <div class="glass rounded-2xl shadow-2xl p-8">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">What happens next?</h3>
-            <ol class="space-y-4">
-              <li class="flex gap-4"><span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">1</span><div><p class="font-medium text-gray-800">Create Repository</p><p class="text-gray-500 text-sm">New public GitHub repository created</p></div></li>
-              <li class="flex gap-4"><span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">2</span><div><p class="font-medium text-gray-800">Generate Files</p><p class="text-gray-500 text-sm">HTML, CSS, JS committed</p></div></li>
-              <li class="flex gap-4"><span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">3</span><div><p class="font-medium text-gray-800">Enable GitHub Pages</p><p class="text-gray-500 text-sm">Site deployed and live</p></div></li>
-            </ol>
-            <div class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p class="text-yellow-800 text-sm"><strong>Note:</strong> Your portfolio is self-contained and works forever!</p>
-            </div>
-            <button onclick="downloadCode()" class="mt-6 w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-              Download Code Instead
-            </button>
-          </div>
-        </div>
-      `;
+    function renderCodeView() {
+      var t = templates.find(function(x){return x.id===state.selectedTemplate;});
+      var code = generateCode(state.selectedTemplate);
+      return '<button onclick="goBack(2)" class="mb-6 text-white/80 hover:text-white">Back to Templates</button><div class="glass rounded-2xl shadow-2xl overflow-hidden"><div class="bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700"><h3 class="text-white font-bold">' + t.name + ' Template</h3><div class="flex gap-2"><button onclick="showPreview(\'' + state.selectedTemplate + '\')" class="px-4 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">Preview</button><button onclick="copyCode()" class="px-4 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">Copy All</button><button onclick="downloadCode()" class="px-4 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Download</button></div></div><div class="max-h-[70vh] overflow-auto"><div class="p-6"><div class="mb-4"><h4 class="text-sm font-bold text-gray-500 mb-2">index.html</h4><pre class="code-block bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm whitespace-pre">' + escapeHtml(code.html) + '</pre></div><div class="mb-4"><h4 class="text-sm font-bold text-gray-500 mb-2">styles.css</h4><pre class="code-block bg-gray-900 text-blue-400 p-4 rounded-lg overflow-x-auto text-sm whitespace-pre">' + escapeHtml(code.css) + '</pre></div><div><h4 class="text-sm font-bold text-gray-500 mb-2">script.js</h4><pre class="code-block bg-gray-900 text-yellow-400 p-4 rounded-lg overflow-x-auto text-sm whitespace-pre">' + escapeHtml(code.js) + '</pre></div></div></div></div>';
     }
 
-    function renderSuccess() {
-      const result = state.deploymentResult;
-      return `
-        <div class="text-center fade-in">
-          <div class="glass rounded-2xl shadow-2xl p-12 max-w-2xl mx-auto">
-            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            </div>
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">Congratulations!</h2>
-            <p class="text-gray-600 mb-8">Your portfolio has been deployed successfully!</p>
-            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8">
-              <p class="text-sm text-gray-500 mb-2">Your live portfolio:</p>
-              <a href="${result.liveUrl}" target="_blank" class="text-xl font-semibold text-blue-600 hover:text-blue-700 break-all">${result.liveUrl}</a>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <a href="${result.liveUrl}" target="_blank" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-600 flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                Visit My Live Portfolio
-              </a>
-              <button onclick="copyLink('${result.liveUrl}')" class="px-8 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                Copy Link
-              </button>
-            </div>
-          </div>
-          <button onclick="resetFlow()" class="mt-8 px-8 py-4 text-white hover:text-white/80 transition">Create Another Portfolio</button>
-        </div>
-      `;
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function generateCode(templateId) {
+      var d = state.formData;
+      var accent = d.brandColor || '#3B82F6';
+      var skills = d.skills || [];
+      var projects = d.projects || [];
+      var exp = d.experience || [];
+      var social = d.socialLinks || {};
+      var edu = d.education || {};
+      
+      var html = '<!DOCTYPE html>\n<html lang="en>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>' + d.fullName + ' | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <div class="container">\n    <header class="hero">\n      <div class="avatar">' + d.fullName.charAt(0) + '</div>\n      <h1>' + d.fullName + '</h1>\n      <p class="title">' + d.professionalTitle + '</p>\n      <p class="bio">' + d.bio + '</p>\n      <div class="social">\n        <a href="' + social.github + '">GitHub</a>\n        <a href="' + social.linkedin + '">LinkedIn</a>\n      </div>\n    </header>\n    <section class="skills-section">\n      <h2>Skills</h2>\n      <div class="skills">' + skills.map(function(s){return '<span class="skill">' + s + '</span>';}).join('') + '</div>\n    </section>\n    <section class="exp-section">\n      <h2>Experience</h2>' + exp.map(function(e){return '<div class="exp-card"><h3>' + e.jobTitle + '</h3><p class="company">' + e.company + '</p><p class="period">' + e.startDate + ' - ' + e.endDate + '</p></div>';}).join('') + '\n    </section>\n    <section class="projects-section">\n      <h2>Projects</h2>\n      <div class="projects">' + projects.map(function(p){return '<div class="project"><h3>' + p.name + '</h3><p>' + p.description + '</p><div class="links"><a href="' + p.liveUrl + '">Live</a><a href="' + p.githubUrl + '">Code</a></div></div>';}).join('') + '</div>\n    </section>\n    <section class="edu-section">\n      <h2>Education</h2>\n      <div class="edu-card"><h3>' + edu.degree + '</h3><p>' + edu.institution + '</p></div>\n    </section>\n  </div>\n  <script src="script.js"><\/script>\n</body>\n</html>';
+      
+      var css = '*{margin:0;padding:0;box-sizing:border-box}:root{--accent:' + accent + ';--bg:#f8fafc;--text:#1a1a2e;--muted:#64748b}.container{max-width:900px;margin:0 auto;padding:2rem;font-family:system-ui,sans-serif;background:var(--bg);min-height:100vh}.hero{text-align:center;padding:3rem 0;border-bottom:2px solid #e5e5e5;margin-bottom:3rem}.avatar{width:120px;height:120px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:3rem;color:#fff;font-weight:700}h1{font-size:2.5rem;font-weight:700;margin-bottom:0.5rem;color:var(--text)}.title{font-size:1.25rem;color:var(--accent);font-weight:500;margin-bottom:1rem}.bio{max-width:500px;margin:0 auto 2rem;color:var(--muted);line-height:1.7}.social{display:flex;gap:1rem;justify-content:center}.social a{padding:0.75rem 1.5rem;background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:500}section{margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid #e5e5e5}h2{font-size:1.75rem;font-weight:600;margin-bottom:1.5rem;color:var(--text)}.skills{display:flex;flex-wrap:wrap;gap:0.75rem}.skill{padding:0.5rem 1rem;background:#fff;border:1px solid #e5e5e5;border-radius:50px;font-size:0.9rem;font-weight:500}.exp-card{background:#fff;padding:1.5rem;border-radius:12px;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.exp-card h3{font-size:1.1rem;font-weight:600;margin-bottom:0.25rem;color:var(--text)}.exp-card .company{color:var(--accent);font-weight:500;margin-bottom:0.25rem}.exp-card .period{font-size:0.85rem;color:var(--muted)}.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}.project{background:#fff;padding:1.5rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.project h3{font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;color:var(--text)}.project p{color:var(--muted);margin-bottom:1rem}.project .links{display:flex;gap:1rem}.project a{color:var(--accent);text-decoration:none;font-size:0.9rem;font-weight:500}.edu-card{background:linear-gradient(135deg,var(--accent),#8b5cf6);padding:2rem;border-radius:12px;color:#fff;text-align:center}.edu-card h3{font-size:1.25rem;margin-bottom:0.5rem}.edu-card p{opacity:0.9}';
+      
+      var js = "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('a').forEach(function(a){a.setAttribute('target','_blank');a.setAttribute('rel','noopener noreferrer')})});";
+      
+      return {html: html, css: css, js: js};
     }
 
     function showPreview(templateId) {
-      state.previewTemplate = templateId;
-      const modal = document.getElementById('modal');
-      const template = templates.find(t => t.id === templateId);
+      var d = state.formData;
+      var accent = d.brandColor || '#3B82F6';
+      var skills = d.skills || [];
+      var social = d.socialLinks || {};
+      var t = templates.find(function(x){return x.id===templateId;});
       
-      modal.innerHTML = `
-        <div class="w-full max-w-6xl bg-white rounded-2xl overflow-hidden shadow-2xl">
-          <div class="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
-            <div class="flex gap-2">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div class="w-3 h-3 rounded-full bg-green-500"></div>
-            </div>
-            <span class="text-sm text-gray-500">${template.name} Template Preview</span>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-          </div>
-          <div class="h-[70vh] overflow-auto">
-            <iframe id="previewFrame" class="w-full h-full border-0" title="Template Preview"></iframe>
-          </div>
-          <div class="bg-gray-100 px-4 py-3 flex items-center justify-between border-t">
-            <button onclick="downloadCode()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2 text-sm">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-              Download Code
-            </button>
-            <button onclick="selectTemplate('${templateId}'); closeModal();" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm">Select This Template</button>
-          </div>
-        </div>
-      `;
+      var preview = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:' + (t.bg.includes('900') ? '#0f172a' : '#f8fafc') + ';color:#fff;min-height:100vh;padding:2rem}.container{max-width:700px;margin:0 auto;padding:2rem}.avatar{width:100px;height:100px;border-radius:50%;background:' + accent + ';display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2.5rem;color:#fff}h1{font-size:1.75rem;text-align:center;margin-bottom:0.25rem}.title{text-align:center;color:' + accent + ';margin-bottom:1rem}.bio{text-align:center;max-width:400px;margin:0 auto 1.5rem;opacity:0.8}.social{text-align:center;margin-bottom:2rem}.btn{padding:0.5rem 1rem;background:' + accent + ';color:#fff;text-decoration:none;border-radius:6px;margin:0 0.25rem}.section{background:rgba(255,255,255,0.1);padding:1.5rem;border-radius:12px;margin-bottom:1.5rem}h2{color:' + accent + ';margin-bottom:1rem;font-size:1.25rem}.skills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem}.skill{padding:0.25rem 0.75rem;background:rgba(255,255,255,0.1);border-radius:20px;font-size:0.85rem}.card{background:rgba(255,255,255,0.05);padding:1rem;border-radius:8px;margin-bottom:1rem}.card h3{color:' + accent + ';margin-bottom:0.25rem}</style></head><body><div class="container"><div class="avatar">' + d.fullName.charAt(0) + '</div><h1>' + d.fullName + '</h1><p class="title">' + d.professionalTitle + '</p><p class="bio">' + d.bio + '</p><div class="social"><a href="' + social.github + '" class="btn">GitHub</a><a href="' + social.linkedin + '" class="btn">LinkedIn</a></div><div class="section"><h2>Skills</h2><div class="skills">' + skills.map(function(s){return '<span class="skill">' + s + '</span>';}).join('') + '</div></div></div></body></html>';
       
+      var modal = document.getElementById('modal');
+      modal.innerHTML = '<div class="w-full max-w-4xl mx-auto mt-8"><div class="bg-gray-800 rounded-t-xl px-4 py-3 flex justify-between items-center"><span class="text-white font-bold">' + t.name + ' Preview</span><button onclick="closeModal()" class="text-white/70 hover:text-white">Close X</button></div><iframe srcdoc="' + preview.replace(/"/g, '&quot;') + '" class="w-full h-[70vh] bg-white rounded-b-xl border-0"></iframe></div>';
       modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      
-      generatePreviewHTML(templateId);
-    }
-
-    function generatePreviewHTML(templateId) {
-      const data = state.formData;
-      const skills = data.skills || [];
-      const experience = data.experience || [];
-      const projects = data.projects || [];
-      const education = data.education || {};
-      const socialLinks = data.socialLinks || {};
-      const accent = data.brandColor || '#3B82F6';
-
-      let previewHTML = '';
-      
-      if (templateId === 'Terminal') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}:root{--bg:#0d1117;--accent:${accent}}body{font-family:monospace;background:var(--bg);color:#c9d1d9;padding:2rem;line-height:1.6}.terminal{max-width:900px;margin:0 auto;background:#161b22;border-radius:8px;padding:1.5rem}.prompt{color:var(--accent);font-weight:bold}.keyword{color:#ff7b72}.variable{color:#79c0ff}.string{color:#a5d6ff}.key{color:#7ee787}.comment{color:#8b949e}h1{font-size:1.5rem;margin:1rem 0}.section{margin:1rem 0 2rem 1rem;padding-left:1rem;border-left:2px solid var(--accent)}.skills{display:flex;flex-wrap:wrap;gap:0.5rem;margin:1rem 0 2rem 1rem}.skill{background:var(--bg);padding:0.25rem 0.75rem;border-radius:4px;border:1px solid var(--accent);font-size:0.85rem}.project{background:var(--bg);padding:1rem;border-radius:6px;border:1px solid #30363d;margin-bottom:1rem}.project h3{color:var(--accent);margin-bottom:0.5rem}a{color:#3fb950;text-decoration:none}a:hover{text-decoration:underline}.cursor{animation:blink 1s infinite}@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}</style></head><body><div class="terminal"><div class="prompt">$</div><div class="section"><h1><span class="keyword">const</span> <span class="variable">developer</span>={name:"${data.fullName}",title:"${data.professionalTitle}"}</h1></div><div class="prompt">$</div><div class="skills">${skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div><div class="prompt">$</div><div class="section">${experience.map(e=>`<div><span class="comment">//</span>${e.company}<br><span class="variable">position</span>:<span class="string">"${e.jobTitle}"</span></div>`).join('')}</div><div class="prompt">$</div><div class="section">${projects.map(p=>`<div class="project"><h3>${p.name}</h3><p>${p.description}</p><a href="${p.liveUrl}">Demo</a> <a href="${p.githubUrl}">Code</a></div>`).join('')}</div><div class="prompt">$</div><span class="cursor">█</span></div></body></html>`;
-      } else if (templateId === 'Glassmorphism') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);min-height:100vh;color:#fff;padding:2rem}.container{max-width:800px;margin:0 auto}.hero{text-align:center;padding:3rem 0}.avatar{width:120px;height:120px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto 1rem}h1{font-size:2rem;margin-bottom:0.5rem}.title{color:${accent};margin-bottom:1rem}.bio{max-width:500px;margin:0 auto 1.5rem;opacity:0.8}.glass{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;backdrop-filter:blur(10px)}.btn{padding:0.75rem 1.5rem;background:${accent};border-radius:12px;text-decoration:none;color:#fff;display:inline-block}.skills{display:flex;flex-wrap:wrap;gap:0.5rem}.skill{padding:0.5rem 1rem;background:rgba(255,255,255,0.1);border-radius:20px;font-size:0.9rem}h2{color:${accent};margin-bottom:1rem}</style></head><body><div class="container"><div class="hero"><div class="avatar">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="title">${data.professionalTitle}</p><p class="bio">${data.bio}</p><a href="${socialLinks.github}" class="btn">GitHub</a> <a href="${socialLinks.linkedin}" class="btn">LinkedIn</a></div><div class="glass"><h2>Skills</h2><div class="skills">${skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div></div><div class="glass"><h2>Projects</h2>${projects.map(p=>`<div style="margin-bottom:1rem"><h3>${p.name}</h3><p>${p.description}</p><a href="${p.liveUrl}" style="color:${accent}">Live</a> <a href="${p.githubUrl}" style="color:${accent}">Code</a></div>`).join('')}</div></div></body></html>`;
-      } else if (templateId === 'Sidebar') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;font-family:system-ui,sans-serif;min-height:100vh}aside{width:280px;background:#1a1a2e;padding:2rem;color:#fff;position:fixed;height:100vh}main{flex:1;margin-left:280px;padding:2rem;background:#f8f9fa}.avatar{width:100px;height:100px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 1rem}h1{font-size:1.25rem;text-align:center}.role{color:${accent};text-align:center;font-size:0.9rem;margin-bottom:2rem}nav{display:flex;flex-direction:column;gap:0.75rem}nav a{color:rgba(255,255,255,0.8);text-decoration:none;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.1)}h2{font-size:1.5rem;margin-bottom:1rem;padding-left:1rem;border-left:4px solid ${accent}}.card{background:#fff;padding:1.5rem;border-radius:12px;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.skills{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem}.skill{background:#fff;padding:0.75rem;text-align:center;border-radius:8px;border:1px solid #e9ecef}</style></head><body><aside><div class="avatar">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="role">${data.professionalTitle}</p><nav><a href="#about">About</a><a href="#skills">Skills</a><a href="#projects">Projects</a></nav></aside><main><section id="about" class="card"><h2>About</h2><p>${data.bio}</p></section><section id="skills" class="card"><h2>Skills</h2><div class="skills">${skills.map(s=>`<div class="skill">${s}</div>`).join('')}</div></section><section id="projects" class="card"><h2>Projects</h2>${projects.map(p=>`<div style="margin-bottom:1rem"><h3>${p.name}</h3><p>${p.description}</p></div>`).join('')}</section></main></body></html>`;
-      } else if (templateId === 'Gradient') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#fff}.hero{position:relative;min-height:60vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:4rem 2rem;overflow:hidden}.orb{position:absolute;width:300px;height:300px;border-radius:50%;filter:blur(60px);opacity:0.5;background:${accent}}.orb1{top:-100px;left:-100px}.orb2{bottom:-50px;right:-50px;background:#8b5cf6}.content{position:relative;z-index:1;text-align:center}.avatar{width:150px;height:150px;border-radius:16px;object-fit:cover;border:4px solid ${accent};margin-bottom:1.5rem;transform:rotate(-3deg)}h1{font-size:3rem;font-weight:700;margin-bottom:0.5rem}.title{font-size:1.25rem;color:${accent};margin-bottom:1rem}.bio{max-width:500px;margin:0 auto 2rem;opacity:0.8}.btn{padding:1rem 2rem;background:linear-gradient(135deg,${accent},#8b5cf6);border-radius:50px;text-decoration:none;color:#fff;font-weight:600}.section{padding:4rem 2rem;max-width:1000px;margin:0 auto}.section h2{font-size:2rem;margin-bottom:2rem}.skills{display:flex;flex-wrap:wrap;gap:1rem}.skill{padding:0.75rem 1.5rem;background:#fff;color:#333;border-radius:50px;font-weight:500}</style></head><body><div class="hero"><div class="orb orb1"></div><div class="orb orb2"></div><div class="content"><div class="avatar">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="title">${data.professionalTitle}</p><p class="bio">${data.bio}</p><a href="${socialLinks.github}" class="btn">GitHub</a></div></div><div class="section"><h2>Skills</h2><div class="skills">${skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div></div></body></html>`;
-      } else if (templateId === 'Minimalist') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#fff;color:#2d2d2d;max-width:800px;margin:0 auto;padding:4rem 2rem;line-height:1.7}.header{display:flex;gap:2rem;align-items:flex-start;margin-bottom:3rem}.portrait{width:120px;height:120px;border-radius:4px;background:${accent};display:flex;align-items:center;justify-content:center;font-size:3rem;color:#fff}h1{font-size:2rem;font-weight:600;margin-bottom:0.25rem}.subtitle{color:${accent};margin-bottom:1rem}.bio{color:#6b6b6b;max-width:400px;margin-bottom:1rem}h2{font-size:1.25rem;font-weight:600;margin:2rem 0 1rem;border-bottom:1px solid #e5e5e5;padding-bottom:0.5rem}.skills{color:#6b6b6b}.divider{border:none;border-top:1px solid #e5e5e5;margin:2rem 0}</style></head><body><div class="header"><div class="portrait">${data.fullName.charAt(0)}</div><div><h1>${data.fullName}</h1><p class="subtitle">${data.professionalTitle}</p><p class="bio">${data.bio}</p><a href="${socialLinks.github}" style="color:${accent}">GitHub</a> <a href="${socialLinks.linkedin}" style="color:${accent}">LinkedIn</a></div></div><hr class="divider"><h2>Skills</h2><p class="skills">${skills.join(' · ')}</p></body></html>`;
-      } else if (templateId === 'Magazine') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;background:#faf9f7;max-width:900px;margin:0 auto;padding:3rem 2rem}.masthead{text-align:center;padding:3rem 0;border-bottom:3px double #333;margin-bottom:3rem}.issue{font-size:0.75rem;letter-spacing:0.3em;text-transform:uppercase;margin-bottom:1rem}h1{font-size:3rem;font-weight:700;margin-bottom:0.5rem}.tagline{font-style:italic;color:#666;margin-bottom:1rem}.avatar{width:140px;height:140px;border-radius:50%;object-fit:cover;border:4px solid ${accent};margin:0 auto}h2{font-size:1.5rem;margin-bottom:1rem;position:relative;display:inline-block}h2::after{content:'';position:absolute;bottom:-4px;left:0;width:40px;height:2px;background:${accent}}.article{margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid #ddd}.skills{display:flex;flex-wrap:wrap;gap:0.5rem}.skill{padding:0.5rem 1rem;border:1px solid #333;font-size:0.85rem;text-transform:uppercase}</style></head><body><div class="masthead"><div class="issue">Developer Portfolio 2024</div><div class="avatar">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="tagline">${data.professionalTitle}</p></div><div class="article"><h2>About</h2><p>${data.bio}</p></div><div class="article"><h2>Skills</h2><div class="skills">${skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div></div></body></html>`;
-      } else if (templateId === 'Cyberpunk') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;min-height:100vh}.scanlines{position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15),rgba(0,0,0,0.15)1px,transparent 1px,transparent 2px);pointer-events:none;z-index:100}.hero{text-align:center;padding:4rem 2rem}.avatar{width:120px;height:120px;border-radius:8px;border:2px solid ${accent};box-shadow:0 0 30px ${accent}66}h1{font-size:2.5rem;font-weight:700;margin:1rem 0;text-shadow:0 0 20px ${accent}66}.typewriter{color:${accent};font-size:1.1rem;margin-bottom:1rem}.bio{opacity:0.8;max-width:500px;margin:0 auto 2rem}.btn{padding:1rem 2rem;border:1px solid ${accent};color:${accent};text-decoration:none;text-transform:uppercase;letter-spacing:0.1em}.section{padding:3rem 2rem;max-width:800px;margin:0 auto}.section h2{font-size:1.5rem;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:2rem;color:${accent}}.skill{padding:0.75rem 1.5rem;background:#111;border:1px solid ${accent};margin-bottom:0.75rem}</style></head><body><div class="scanlines"></div><div class="hero"><div class="avatar">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="typewriter">${data.professionalTitle}</p><p class="bio">${data.bio}</p><a href="${socialLinks.github}" class="btn">GitHub</a></div><div class="section"><h2>Skills</h2>${skills.map(s=>`<div class="skill">${s}</div>`).join('')}</div></body></html>`;
-      } else if (templateId === 'Vintage') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;background:#f5f0e8;max-width:800px;margin:0 auto;padding:3rem 2rem}.header{text-align:center;padding:2rem 0}.portrait{width:120px;height:120px;border-radius:50%;border:4px solid ${accent};padding:4px;background:#faf8f5;margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;font-size:3rem}h1{font-size:2.5rem;margin-bottom:0.5rem}.title{color:${accent};font-style:italic;margin-bottom:1rem}.bio{opacity:0.85;max-width:450px;margin:0 auto 1.5rem;line-height:1.8}.links a{color:#333;text-decoration:none;margin:0 1rem}.divider{text-align:center;margin:2rem 0;color:${accent};font-size:1.5rem}h2{text-align:center;font-size:1.5rem;margin-bottom:2rem}.skills{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem}.skill{padding:0.5rem 1.25rem;background:#faf8f5;border:1px solid ${accent}}</style></head><body><div class="header"><div class="portrait">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="title">${data.professionalTitle}</p><p class="bio">${data.bio}</p><div class="links"><a href="${socialLinks.github}">GitHub</a><a href="${socialLinks.linkedin}">LinkedIn</a></div></div><div class="divider">***</div><h2>Skills</h2><div class="skills">${skills.map(s=>`<span class="skill">${s}</span>`).join('')}</div></body></html>`;
-      } else if (templateId === 'Neobrutalism') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#f8f9fa}.hero{display:flex;gap:3rem;align-items:center;padding:4rem;background:#1a1a2e;color:#fff;flex-wrap:wrap}.portrait{width:160px;height:160px;object-fit:cover;border:4px solid #fff;box-shadow:6px 6px 0 #fff}h1{font-size:3rem;font-weight:700;margin-bottom:0.5rem}.role{color:${accent};font-size:1.25rem;font-weight:500;margin-bottom:1rem}.bio{max-width:400px;opacity:0.8;margin-bottom:2rem}.btn{padding:1rem 2rem;text-decoration:none;font-weight:600;border:3px solid #fff}.btn-primary{background:#fff;color:#1a1a2e}.section{padding:3rem;max-width:1000px;margin:0 auto}.section h2{font-size:2rem;font-weight:700;margin-bottom:2rem}.skills{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}.skill{background:#fff;padding:1.5rem;text-align:center;font-weight:600;border:3px solid #1a1a2e;box-shadow:4px 4px 0 #1a1a2e}</style></head><body><div class="hero"><div class="portrait">${data.fullName.charAt(0)}</div><div><h1>${data.fullName}</h1><p class="role">${data.professionalTitle}</p><p class="bio">${data.bio}</p><a href="${socialLinks.github}" class="btn btn-primary">GitHub</a></div></div><div class="section"><h2>Skills</h2><div class="skills">${skills.map(s=>`<div class="skill">${s}</div>`).join('')}</div></div></body></html>`;
-      } else if (templateId === 'Startup') {
-        previewHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#f8fafc}.navbar{display:flex;justify-content:space-between;padding:1.5rem 4rem;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);position:fixed;width:100%;top:0}.logo{font-weight:800;font-size:1.5rem;color:${accent}}.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 4rem;background:linear-gradient(180deg,#f8fafc 0%,#e0e7ff 100%)}.badge{display:inline-block;padding:0.5rem 1rem;background:#dcfce7;color:#166534;font-size:0.85rem;font-weight:600;border-radius:50px;margin-bottom:2rem}.portrait{width:150px;height:150px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 0 0 8px ${accent};margin-bottom:2rem}h1{font-size:3.5rem;font-weight:800;margin-bottom:0.5rem;background:linear-gradient(135deg,#0f172a,${accent});-webkit-background-clip:text;-webkit-text-fill-color:transparent}.subtitle{font-size:1.25rem;color:${accent};font-weight:500;margin-bottom:1rem}.bio{font-size:1.1rem;color:#64748b;max-width:500px;line-height:1.6}.section{padding:4rem;max-width:1000px;margin:0 auto}.section h2{font-size:2rem;font-weight:700;margin-bottom:3rem;text-align:center}.techs{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem}.tech{padding:1rem 2rem;background:#fff;border:1px solid #e2e8f0;border-radius:12px;font-weight:600}</style></head><body><nav class="navbar"><span class="logo">${data.fullName.split(' ')[0]}</span><div><a href="${socialLinks.github}" style="color:#333">GitHub</a></div></nav><div class="hero"><div class="badge">Available for work</div><div class="portrait">${data.fullName.charAt(0)}</div><h1>${data.fullName}</h1><p class="subtitle">${data.professionalTitle}</p><p class="bio">${data.bio}</p></div><div class="section"><h2>The Tech Stack</h2><div class="techs">${skills.map(s=>`<div class="tech">${s}</div>`).join('')}</div></div></body></html>`;
-      }
-      
-      const iframe = document.getElementById('previewFrame');
-      if (iframe) {
-        iframe.srcdoc = previewHTML;
-      }
     }
 
     function closeModal() {
-      const modal = document.getElementById('modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      state.previewTemplate = null;
+      document.getElementById('modal').classList.add('hidden');
     }
 
-    function showAllPreviews() {
-      const modal = document.getElementById('modal');
-      
-      modal.innerHTML = `
-        <div class="w-full max-w-6xl bg-white rounded-2xl overflow-hidden shadow-2xl">
-          <div class="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
-            <span class="text-sm font-medium text-gray-700">All Template Previews</span>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-          </div>
-          <div class="p-6 overflow-auto max-h-[70vh]">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              ${templates.map(t => `
-                <div class="border rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500" onclick="showPreview('${t.id}')">
-                  <div class="h-32 bg-gradient-to-br ${t.gradient} flex items-center justify-center">
-                    <span class="text-3xl text-white/90">${t.icon}</span>
-                  </div>
-                  <div class="p-3">
-                    <p class="font-medium text-sm">${t.name}</p>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-      
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+    function selectTemplate(id) {
+      state.selectedTemplate = id;
+      state.step = 3;
+      render();
     }
 
-    function downloadCode() {
-      const data = state.formData;
-      const templateId = state.selectedTemplate || state.formData.themePreference || 'Minimalist';
-      
-      const template = templates.find(t => t.id === templateId) || templates[4];
-      
-      let html = '', css = '', js = '';
-      
-      if (templateId === 'Terminal') {
-        html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${data.fullName} | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">\n</head>\n<body>\n  <div class="terminal">\n    <div class="terminal-header">\n      <div class="terminal-buttons"><span class="btn-close"></span><span class="btn-minimize"></span><span class="btn-maximize"></span></div>\n      <div class="terminal-title">${data.fullName}@portfolio ~ bash</div>\n    </div>\n    <div class="terminal-body">\n      <div class="terminal-line"><span class="prompt">$</span> whoami</div>\n      <div class="section">\n        <h1><span class="keyword">const</span> <span class="variable">developer</span> = {</h1>\n        <p class="property">  <span class="key">name</span>: <span class="string">"${data.fullName}"</span>,</p>\n        <p class="property">  <span class="key">title</span>: <span class="string">"${data.professionalTitle || 'Developer'}"</span>,</p>\n        <p class="property">  <span class="key">bio</span>: <span class="string">"${data.bio || ''}"</span></p>\n        <p>};</p>\n      </div>\n      <div class="terminal-line"><span class="prompt">$</span> ls skills/</div>\n      <div class="skills-grid">${(data.skills || []).map(s => `<span class="skill-tag">${s}</span>`).join('')}</div>\n      <div class="terminal-line"><span class="prompt">$</span> cat experience.log</div>\n      <div class="section">${(data.experience || []).map(e => `<div class="experience-item"><p><span class="comment">//</span> ${e.company}</p><p><span class="variable">position</span>: <span class="string">"${e.jobTitle}"</span></p><p><span class="variable">period</span>: <span class="string">"${e.startDate || ''} - ${e.endDate || 'Present'}"</span></p><ul class="bullets">${(e.bullets || []).map(b => `<li><span class="comment">//</span> ${b}</li>`).join('')}</ul></div>`).join('')}</div>\n      <div class="terminal-line"><span class="prompt">$</span> ls projects/</div>\n      <div class="projects-grid">${(data.projects || []).map(p => `<div class="project-card"><h3>${p.name}</h3><p>${p.description || ''}</p><div class="project-links">${p.liveUrl ? `<a href="${p.liveUrl}">→ live demo</a>` : ''}${p.githubUrl ? `<a href="${p.githubUrl}">→ source code</a>` : ''}</div></div>`).join('')}</div>\n      <div class="terminal-line"><span class="prompt">$</span> ./contact.sh</div>\n      <div class="contact-section"><p><span class="comment">// Connect with me</span></p><div class="social-links">${(data.socialLinks || {}).github ? `<a href="${data.socialLinks.github}">GitHub</a>` : ''}${(data.socialLinks || {}).linkedin ? `<a href="${data.socialLinks.linkedin}">LinkedIn</a>` : ''}${(data.socialLinks || {}).twitter ? `<a href="${data.socialLinks.twitter}">Twitter</a>` : ''}${data.resumeUrl ? `<a href="${data.resumeUrl}">Resume</a>` : ''}</div></div>\n      <div class="terminal-line"><span class="prompt">$</span> <span class="cursor">█</span></div>\n    </div>\n  </div>\n  <script src="script.js"></script>\n</body>\n</html>`;
-        css = `*{margin:0;padding:0;box-sizing:border-box}:root{--bg-primary:#0d1117;--bg-secondary:#161b22;--text-primary:#c9d1d9;--text-secondary:#8b949e;--accent:${data.brandColor||'#3B82F6'};--success:#3fb950}body{font-family:'JetBrains Mono','Fira Code',monospace;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;padding:2rem;line-height:1.6}.terminal{max-width:1200px;margin:0 auto;background:var(--bg-secondary);border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)}.terminal-header{background:var(--bg-primary);padding:12px 16px;display:flex;align-items:center;gap:12px}.terminal-buttons{display:flex;gap:8px}.terminal-buttons span{width:12px;height:12px;border-radius:50%}.btn-close{background:#ff5f56}.btn-minimize{background:#ffbd2e}.btn-maximize{background:#27ca40}.terminal-title{color:var(--text-secondary);font-size:.85rem;margin-left:auto}.terminal-body{padding:2rem}.terminal-line{margin-bottom:1rem}.prompt{color:var(--accent);margin-right:8px;font-weight:600}.keyword{color:#ff7b72}.variable{color:#79c0ff}.string{color:#a5d6ff}.key{color:#7ee787}.comment{color:var(--text-secondary)}.section{margin:1rem 0 2rem 1.5rem;padding-left:1rem;border-left:2px solid var(--accent)}.skills-grid{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 2rem 1.5rem}.skill-tag{background:var(--bg-primary);padding:.25rem .75rem;border-radius:4px;font-size:.85rem;border:1px solid var(--accent)}.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin:1rem 0 2rem 1.5rem}.project-card{background:var(--bg-primary);padding:1.25rem;border-radius:8px;border:1px solid #30363d}.project-card:hover{border-color:var(--accent)}.project-card h3{color:var(--accent);margin-bottom:.5rem}.project-card p{color:var(--text-secondary);font-size:.9rem;margin-bottom:.75rem}.project-links{display:flex;gap:1rem}.project-links a{color:var(--success);text-decoration:none}.social-links{display:flex;flex-wrap:wrap;gap:1rem;margin-top:.5rem}.social-links a{color:var(--accent);text-decoration:none;padding:.5rem 1rem;background:var(--bg-primary);border-radius:4px;border:1px solid var(--accent)}.cursor{animation:blink 1s infinite}@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}`;
-        js = `document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a').forEach(a=>{a.setAttribute('target','_blank')})});`;
-      } else if (templateId === 'Glassmorphism') {
-        html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${data.fullName} | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <div class="glass-bg"></div>\n  <div class="container">\n    <header class="hero">\n      ${data.profileImage ? `<img src="${data.profileImage}" alt="${data.fullName}" class="profile-img">` : `<div class="profile-placeholder"><span>${data.fullName.charAt(0)}</span></div>`}\n      <h1>${data.fullName}</h1>\n      <p class="title">${data.professionalTitle || 'Developer'}</p>\n      <p class="bio">${data.bio || ''}</p>\n      <div class="social-links">${(data.socialLinks || {}).github ? `<a href="${data.socialLinks.github}" class="glass-btn">GitHub</a>` : ''}${(data.socialLinks || {}).linkedin ? `<a href="${data.socialLinks.linkedin}" class="glass-btn">LinkedIn</a>` : ''}</div>\n    </header>\n    <section class="glass-card"><h2>Skills</h2><div class="skills-wrap">${(data.skills || []).map(s => `<span class="skill">${s}</span>`).join('')}</div></section>\n    <section class="glass-card"><h2>Projects</h2><div class="projects-grid">${(data.projects || []).map(p => `<div class="project-card"><h3>${p.name}</h3><p>${p.description || ''}</p><div class="proj-links">${p.liveUrl ? `<a href="${p.liveUrl}">Live</a>` : ''}${p.githubUrl ? `<a href="${p.githubUrl}">Code</a>` : ''}</div></div>`).join('')}</div></section>\n  </div>\n  <script src="script.js"></script>\n</body>\n</html>`;
-        css = `*{margin:0;padding:0;box-sizing:border-box}:root{--accent:${data.brandColor||'#3B82F6'};--glass-bg:rgba(255,255,255,0.05);--glass-border:rgba(255,255,255,0.1);--text:#ffffff}body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:var(--text);min-height:100vh;line-height:1.6}.glass-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(circle at 30% 20%,rgba(59,130,246,0.2) 0%,transparent 50%);z-index:0}.container{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:3rem 1.5rem}.hero{text-align:center;margin-bottom:3rem}.profile-img{width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid var(--accent);box-shadow:0 8px 32px rgba(0,0,0,0.3)}.profile-placeholder{width:160px;height:160px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:4rem;font-weight:600}.hero h1{font-size:2.5rem;margin:1rem 0 .5rem;font-weight:700}.hero .title{font-size:1.25rem;color:var(--accent);margin-bottom:1rem}.hero .bio{max-width:600px;margin:0 auto;color:rgba(255,255,255,0.8)}.hero .social-links{display:flex;gap:1rem;justify-content:center;margin-top:1.5rem;flex-wrap:wrap}.glass-btn{padding:.75rem 1.5rem;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;color:var(--text);text-decoration:none;backdrop-filter:blur(10px);transition:all .3s}.glass-btn:hover{background:var(--accent);border-color:var(--accent)}.glass-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;padding:2rem;margin-bottom:2rem;backdrop-filter:blur(10px)}.glass-card h2{font-size:1.5rem;margin-bottom:1.5rem;color:var(--accent)}.skills-wrap{display:flex;flex-wrap:wrap;gap:.75rem}.skill{padding:.5rem 1rem;background:rgba(255,255,255,0.1);border-radius:20px;font-size:.9rem}.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem}.project-card{padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid var(--glass-border)}.project-card h3{color:var(--accent);margin-bottom:.5rem}.project-card p{font-size:.9rem;opacity:.8;margin-bottom:1rem}.proj-links{display:flex;gap:1rem}.proj-links a{color:var(--text);text-decoration:none;font-size:.85rem;padding:.25rem .75rem;background:rgba(255,255,255,0.1);border-radius:6px}`;
-        js = `document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a').forEach(a=>{a.setAttribute('target','_blank')})});`;
-      } else {
-        // Minimalist (default)
-        html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${data.fullName} | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <div class="page">\n    <header class="header">\n      ${data.profileImage ? `<img src="${data.profileImage}" alt="${data.fullName}" class="portrait">` : ''}\n      <div class="header-text">\n        <h1>${data.fullName}</h1>\n        <p class="subtitle">${data.professionalTitle || 'Developer'}</p>\n        <p class="bio">${data.bio || ''}</p>\n        <div class="header-links">${(data.socialLinks || {}).github ? `<a href="${data.socialLinks.github}">GitHub</a>` : ''}${(data.socialLinks || {}).linkedin ? `<a href="${data.socialLinks.linkedin}">LinkedIn</a>` : ''}</div>\n      </div>\n    </header>\n    <hr class="divider">\n    <section class="section"><h2>Skills</h2><div class="skills-list">${(data.skills || []).join(' · ')}</div></section>\n    <hr class="divider">\n    <section class="section"><h2>Experience</h2>${(data.experience || []).map(e => `<div class="exp-block"><div class="exp-meta"><span class="job">${e.jobTitle}</span><span class="at">at</span><span class="company">${e.company}</span></div><ul>${(e.bullets || []).map(b => `<li>${b}</li>`).join('')}</ul></div>`).join('')}</section>\n    <hr class="divider">\n    <section class="section"><h2>Projects</h2>${(data.projects || []).map(p => `<div class="proj-block"><h3>${p.name}</h3><p>${p.description || ''}</p><div class="proj-links">${p.liveUrl ? `<a href="${p.liveUrl}">Live</a>` : ''}${p.githubUrl ? `<a href="${p.githubUrl}">Code</a>` : ''}</div></div>`).join('')}</section>\n    ${data.resumeUrl ? `<a href="${data.resumeUrl}" class="resume-link">Resume</a>` : ''}\n  </div>\n  <script src="script.js"></script>\n</body>\n</html>`;
-        css = `*{margin:0;padding:0;box-sizing:border-box}:root{--text:#2d2d2d;--accent:${data.brandColor||'#3B82F6'};--muted:#6b6b6b;--border:#e5e5e5}.page{max-width:800px;margin:0 auto;padding:4rem 2rem;font-family:system-ui,sans-serif;color:var(--text);line-height:1.7}.header{display:flex;gap:3rem;align-items:flex-start}.portrait{width:150px;height:150px;border-radius:4px;object-fit:cover;border:1px solid var(--border)}.header-text h1{font-size:2.75rem;font-weight:600;margin-bottom:.25rem}.subtitle{font-size:1.1rem;color:var(--accent);font-weight:400;margin-bottom:1rem}.bio{color:var(--muted);max-width:500px;margin-bottom:1.5rem;font-weight:300}.header-links{display:flex;gap:1.5rem}.header-links a{color:var(--text);text-decoration:none;font-size:.9rem}.divider{border:none;border-top:1px solid var(--border);margin:2.5rem 0}.section h2{font-size:1.5rem;font-weight:600;margin-bottom:1.5rem}.skills-list{color:var(--muted)}.exp-block{margin-bottom:2rem}.exp-meta{display:flex;gap:.5rem;align-items:baseline;margin-bottom:.75rem}.exp-meta .job{font-weight:600}.exp-meta .company{font-weight:500;color:var(--accent)}.exp-block ul{margin-left:1.25rem;color:var(--muted)}.proj-block{margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}.proj-block:last-child{border-bottom:none}.proj-block h3{font-size:1.15rem;margin-bottom:.5rem}.proj-block p{color:var(--muted);margin-bottom:1rem}.proj-links{display:flex;gap:1rem}.proj-links a{color:var(--accent);text-decoration:none;font-size:.9rem}.resume-link{display:inline-block;padding:.75rem 2rem;border:1px solid var(--text);color:var(--text);text-decoration:none;font-size:.9rem}.resume-link:hover{background:var(--text);color:#fff}@media(max-width:600px){.header{flex-direction:column;gap:1.5rem}}`;
-        js = `document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a').forEach(a=>{a.setAttribute('target','_blank')})});`;
-      }
-      
-      const filesContent = `<!-- index.html -->\n${html}\n\n<!-- styles.css -->\n${css}\n\n<!-- script.js -->\n${js}`;
-      
-      const blob = new Blob([filesContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `portfolio-${templateId.toLowerCase()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function attachListeners() {
-      document.querySelectorAll('input, textarea, select').forEach(el => {
-        el.addEventListener('change', handleInputChange);
-        el.addEventListener('input', handleInputChange);
+    function copyCode() {
+      var code = generateCode(state.selectedTemplate);
+      var full = '<!-- index.html -->\n\n' + code.html + '\n\n<!-- styles.css -->\n\n' + code.css + '\n\n<!-- script.js -->\n\n' + code.js;
+      navigator.clipboard.writeText(full).then(function() {
+        alert('Code copied to clipboard!');
       });
     }
 
-    function handleInputChange(e) {
-      const id = e.target.id;
-      const val = e.target.value;
-      
+    function downloadCode() {
+      var code = generateCode(state.selectedTemplate);
+      var full = '<!-- index.html -->\n\n' + code.html + '\n\n<!-- styles.css -->\n\n' + code.css + '\n\n<!-- script.js -->\n\n' + code.js;
+      var blob = new Blob([full], {type: 'text/plain'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'portfolio-' + state.selectedTemplate.toLowerCase() + '.txt';
+      a.click();
+    }
+
+    function attachListeners() {
+      document.querySelectorAll('input, textarea').forEach(function(el) {
+        el.addEventListener('change', handleInput);
+        el.addEventListener('input', handleInput);
+      });
+    }
+
+    function handleInput(e) {
+      var id = e.target.id;
+      var val = e.target.value;
       if (id === 'fullName') state.formData.fullName = val;
       else if (id === 'professionalTitle') state.formData.professionalTitle = val;
       else if (id === 'bio') state.formData.bio = val;
-      else if (id === 'profileImage') state.formData.profileImage = val;
       else if (id === 'github') state.formData.socialLinks.github = val;
       else if (id === 'linkedin') state.formData.socialLinks.linkedin = val;
-      else if (id === 'twitter') state.formData.socialLinks.twitter = val;
-      else if (id === 'blog') state.formData.socialLinks.blog = val;
-      else if (id === 'resumeUrl') state.formData.resumeUrl = val;
-      else if (id === 'skillInput') state.skillInput = val;
-      else if (id === 'brandColor') state.formData.brandColor = val;
-      else if (id === 'themePreference') state.formData.themePreference = val;
       else if (id === 'eduDegree') state.formData.education.degree = val;
       else if (id === 'eduInstitution') state.formData.education.institution = val;
-      else if (id === 'eduYear') state.formData.education.graduationYear = val;
-      else if (id.startsWith('projName')) {
-        const i = parseInt(id.replace('projName', ''));
-        state.formData.projects[i].name = val;
-      } else if (id.startsWith('projDesc')) {
-        const i = parseInt(id.replace('projDesc', ''));
-        state.formData.projects[i].description = val;
-      } else if (id.startsWith('projLive')) {
-        const i = parseInt(id.replace('projLive', ''));
-        state.formData.projects[i].liveUrl = val;
-      } else if (id.startsWith('projGithub')) {
-        const i = parseInt(id.replace('projGithub', ''));
-        state.formData.projects[i].githubUrl = val;
-      } else if (id.startsWith('expTitle')) {
-        const i = parseInt(id.replace('expTitle', ''));
-        state.formData.experience[i].jobTitle = val;
-      } else if (id.startsWith('expCompany')) {
-        const i = parseInt(id.replace('expCompany', ''));
-        state.formData.experience[i].company = val;
-      } else if (id.startsWith('expStart')) {
-        const i = parseInt(id.replace('expStart', ''));
-        state.formData.experience[i].startDate = val;
-      } else if (id.startsWith('expEnd')) {
-        const i = parseInt(id.replace('expEnd', ''));
-        state.formData.experience[i].endDate = val;
-      } else if (id.startsWith('expBullet')) {
-        const [i, j] = id.replace('expBullet', '').split('_').map(Number);
-        state.formData.experience[i].bullets[j] = val;
-      }
+      else if (id === 'brandColor') state.formData.brandColor = val;
+      else if (id.startsWith('projName')) state.formData.projects[parseInt(id.replace('projName',''))].name = val;
+      else if (id.startsWith('projDesc')) state.formData.projects[parseInt(id.replace('projDesc',''))].description = val;
+      else if (id.startsWith('projLive')) state.formData.projects[parseInt(id.replace('projLive',''))].liveUrl = val;
+      else if (id.startsWith('projGithub')) state.formData.projects[parseInt(id.replace('projGithub',''))].githubUrl = val;
+      else if (id.startsWith('expTitle')) state.formData.experience[parseInt(id.replace('expTitle',''))].jobTitle = val;
+      else if (id.startsWith('expCompany')) state.formData.experience[parseInt(id.replace('expCompany',''))].company = val;
     }
 
     function addSkill() {
-      if (state.skillInput.trim()) {
-        state.formData.skills.push(state.skillInput.trim());
-        state.skillInput = '';
+      var input = document.getElementById('skillInput');
+      if (input && input.value.trim()) {
+        state.formData.skills.push(input.value.trim());
+        input.value = '';
         render();
       }
     }
 
-    function removeSkill(index) { state.formData.skills.splice(index, 1); render(); }
-    function addProject() { state.formData.projects.push({ name: '', description: '', liveUrl: '', githubUrl: '' }); render(); }
-    function removeProject(index) { state.formData.projects.splice(index, 1); render(); }
-    function addExperience() { state.formData.experience.push({ jobTitle: '', company: '', startDate: '', endDate: '', bullets: [''] }); render(); }
-    function removeExperience(index) { state.formData.experience.splice(index, 1); render(); }
-    function addBullet(expIndex) { state.formData.experience[expIndex].bullets.push(''); render(); }
+    function removeSkill(i) { state.formData.skills.splice(i, 1); render(); }
+    function addProject() { state.formData.projects.push({name:'',description:'',liveUrl:'',githubUrl:''}); render(); }
     function prevStep() { if (state.formStep > 1) { state.formStep--; render(); } }
-    function nextStep() { state.error = ''; if (state.formStep < 5) { state.formStep++; render(); } else { state.step = 2; render(); } }
+    function nextStep() { if (state.formStep < 5) { state.formStep++; } else { state.step = 2; } render(); }
     function goBack(step) { state.step = step; render(); }
-    function selectTemplate(templateId) { state.selectedTemplate = templateId; render(); }
-    function goToDeploy() { if (state.selectedTemplate) { state.step = 3; render(); } }
-
-    async function verifyToken() {
-      if (!state.githubToken) { state.error = 'Please enter your GitHub token'; render(); return; }
-      state.loading = true; state.error = ''; render();
-      try {
-        const res = await fetch(`${API_URL}/github/verify-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ githubToken: state.githubToken })
-        });
-        const data = await res.json();
-        if (data.valid) { state.tokenValid = true; state.username = data.username; }
-        else { state.tokenValid = false; state.error = data.error || 'Invalid token'; }
-      } catch (e) { state.tokenValid = false; state.error = 'Failed to verify token'; }
-      state.loading = false; render();
-    }
-
-    async function deploy() {
-      if (!state.githubToken || !state.repoName) { state.error = 'Please fill in all fields'; render(); return; }
-      if (!/^[a-zA-Z0-9-_]+$/.test(state.repoName)) { state.error = 'Invalid repo name'; render(); return; }
-      state.loading = true; state.error = ''; render();
-      try {
-        const res = await fetch(`${API_URL}/github/deploy`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ portfolioData: state.formData, githubToken: state.githubToken, repoName: state.repoName, templateType: state.selectedTemplate })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Deployment failed');
-        state.deploymentResult = data; state.step = 4;
-      } catch (e) { state.error = e.message; }
-      state.loading = false; render();
-    }
-
-    function copyLink(url) { navigator.clipboard.writeText(url); alert('Link copied!'); }
-
-    function resetFlow() {
-      state.step = 1; state.formStep = 1; state.selectedTemplate = null;
-      state.githubToken = ''; state.repoName = ''; state.tokenValid = null;
-      state.deploymentResult = null; render();
-    }
 
     render();
   </script>
