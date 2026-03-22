@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoPortfolio Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .step-line { transition: all 0.3s ease; }
+    .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    .template-card:hover { transform: translateY(-4px); }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-in { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+  <div id="app"></div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    
+    const state = {
+      step: 1,
+      formData: {
+        fullName: '',
+        professionalTitle: '',
+        bio: '',
+        profileImage: '',
+        socialLinks: { github: '', linkedin: '', twitter: '', blog: '' },
+        skills: [],
+        projects: [{ name: '', description: '', liveUrl: '', githubUrl: '' }],
+        experience: [{ jobTitle: '', company: '', startDate: '', endDate: '', bullets: [''] }],
+        education: { degree: '', institution: '', graduationYear: '' },
+        resumeUrl: '',
+        brandColor: '#3B82F6',
+        themePreference: 'Minimalist'
+      },
+      formStep: 1,
+      skillInput: '',
+      selectedTemplate: null,
+      githubToken: '',
+      repoName: '',
+      tokenValid: null,
+      username: '',
+      deploymentResult: null,
+      loading: false,
+      error: ''
+    };
+
+    const templates = [
+      { id: 'Terminal', name: 'The Terminal', desc: 'Dark theme, monospace fonts, CLI style' },
+      { id: 'Glassmorphism', name: 'Glassmorphism', desc: 'Modern, frosted glass effect' },
+      { id: 'Sidebar', name: 'The Sidebar', desc: 'Classic layout with navigation' },
+      { id: 'Gradient', name: 'The Gradient', desc: 'Bold gradients, asymmetrical' },
+      { id: 'Minimalist', name: 'Minimalist', desc: 'Clean white space, elegant' }
+    ];
+
+    function render() {
+      const app = document.getElementById('app');
+      
+      let content = `
+        <header class="py-6 px-4">
+          <div class="max-w-6xl mx-auto">
+            <h1 class="text-2xl font-bold text-white">AutoPortfolio Builder</h1>
+            <p class="text-purple-200 text-sm mt-1">Create your professional developer portfolio in minutes</p>
+          </div>
+        </header>
+        <main class="px-4 pb-12">
+          <div class="max-w-6xl mx-auto">
+      `;
+
+      if (state.step < 4) {
+        content += `
+          <div class="flex items-center justify-center gap-2 mb-8">
+            ${[1, 2, 3].map(s => `
+              <div class="w-8 h-8 rounded-full flex items-center justify-center font-semibold ${state.step >= s ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'}">
+                ${s}
+              </div>
+              ${s < 3 ? `<div class="w-12 h-0.5 ${state.step > s ? 'bg-blue-500' : 'bg-white/20'}"></div>` : ''}
+            `).join('')}
+          </div>
+        `;
+      }
+
+      if (state.step === 1) content += renderForm();
+      else if (state.step === 2) content += renderGallery();
+      else if (state.step === 3) content += renderDeploy();
+      else if (state.step === 4) content += renderSuccess();
+
+      content += `</div></main><footer class="py-6 text-center text-white/50 text-sm">Built with React & Node.js</footer>`;
+      
+      app.innerHTML = content;
+      attachListeners();
+    }
+
+    function renderForm() {
+      const f = state.formData;
+      const s = state.formStep;
+      
+      let formContent = '';
+      
+      if (s === 1) {
+        formContent = `
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Basic Information</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+              <input type="text" id="fullName" value="${f.fullName}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John Doe">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Professional Title</label>
+              <input type="text" id="professionalTitle" value="${f.professionalTitle}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Senior Frontend Developer">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+              <textarea id="bio" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Tell us about yourself...">${f.bio}</textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Profile Image URL</label>
+              <input type="url" id="profileImage" value="${f.profileImage}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://example.com/photo.jpg">
+            </div>
+          </div>
+        `;
+      } else if (s === 2) {
+        formContent = `
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Social Links</h2>
+          <div class="space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">GitHub</label>
+                <input type="url" id="github" value="${f.socialLinks.github}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://github.com/username">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
+                <input type="url" id="linkedin" value="${f.socialLinks.linkedin}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://linkedin.com/in/username">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
+                <input type="url" id="twitter" value="${f.socialLinks.twitter}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://twitter.com/username">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Personal Blog</label>
+                <input type="url" id="blog" value="${f.socialLinks.blog}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://yourblog.com">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Resume URL (PDF)</label>
+              <input type="url" id="resumeUrl" value="${f.resumeUrl}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="https://example.com/resume.pdf">
+            </div>
+          </div>
+        `;
+      } else if (s === 3) {
+        formContent = `
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Technical Skills</h2>
+          <div class="space-y-4">
+            <div class="flex gap-3">
+              <input type="text" id="skillInput" value="${state.skillInput}" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg" placeholder="Type a skill and press Enter">
+              <button onclick="addSkill()" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${f.skills.map((skill, i) => `
+                <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full flex items-center gap-2">
+                  ${skill}
+                  <button onclick="removeSkill(${i})" class="w-5 h-5 rounded-full bg-blue-200 text-blue-700 flex items-center justify-center hover:bg-blue-300">×</button>
+                </span>
+              `).join('')}
+            </div>
+            ${f.skills.length === 0 ? '<p class="text-gray-500 text-sm">Add at least one skill</p>' : ''}
+          </div>
+        `;
+      } else if (s === 4) {
+        formContent = `
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Featured Projects</h2>
+          <div class="space-y-4">
+            ${f.projects.map((p, i) => `
+              <div class="p-4 border border-gray-200 rounded-lg space-y-3">
+                <div class="flex justify-between items-center">
+                  <h3 class="font-semibold text-gray-700">Project ${i + 1}</h3>
+                  ${f.projects.length > 1 ? `<button onclick="removeProject(${i})" class="text-red-500 hover:text-red-700">Remove</button>` : ''}
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <input type="text" id="projName${i}" value="${p.name}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Project Name">
+                  <input type="url" id="projLive${i}" value="${p.liveUrl}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Live Demo URL">
+                  <input type="url" id="projGithub${i}" value="${p.githubUrl}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="GitHub URL">
+                </div>
+                <textarea id="projDesc${i}" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Description">${p.description}</textarea>
+              </div>
+            `).join('')}
+            <button onclick="addProject()" class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500">+ Add Another Project</button>
+          </div>
+        `;
+      } else if (s === 5) {
+        formContent = `
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Experience & Style</h2>
+          <div class="space-y-6">
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-4">Work Experience</h3>
+              ${f.experience.map((exp, i) => `
+                <div class="p-4 border border-gray-200 rounded-lg mb-4">
+                  <div class="flex justify-between mb-3">
+                    <span class="font-medium">Position ${i + 1}</span>
+                    ${f.experience.length > 1 ? `<button onclick="removeExperience(${i})" class="text-red-500">Remove</button>` : ''}
+                  </div>
+                  <div class="grid gap-4 md:grid-cols-2 mb-3">
+                    <input type="text" id="expTitle${i}" value="${exp.jobTitle}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Job Title">
+                    <input type="text" id="expCompany${i}" value="${exp.company}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Company">
+                    <input type="text" id="expStart${i}" value="${exp.startDate}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Start Date">
+                    <input type="text" id="expEnd${i}" value="${exp.endDate}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="End Date">
+                  </div>
+                  <div>
+                    <label class="text-sm text-gray-600 mb-2 block">Responsibilities</label>
+                    ${exp.bullets.map((b, j) => `
+                      <input type="text" id="expBullet${i}_${j}" value="${b}" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-2" placeholder="Describe responsibility...">
+                    `).join('')}
+                    <button onclick="addBullet(${i})" class="text-blue-500 text-sm hover:underline">+ Add Responsibility</button>
+                  </div>
+                </div>
+              `).join('')}
+              <button onclick="addExperience()" class="text-blue-500 hover:underline">+ Add Work Experience</button>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-4">Education</h3>
+              <div class="grid gap-4 md:grid-cols-2">
+                <input type="text" id="eduDegree" value="${f.education.degree}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Degree">
+                <input type="text" id="eduInstitution" value="${f.education.institution}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Institution">
+                <input type="text" id="eduYear" value="${f.education.graduationYear}" class="px-4 py-2 border border-gray-300 rounded-lg" placeholder="Graduation Year">
+              </div>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-4">Portfolio Style</h3>
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label class="block text-sm text-gray-600 mb-2">Primary Brand Color</label>
+                  <input type="color" id="brandColor" value="${f.brandColor}" class="w-full h-12 rounded-lg cursor-pointer">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-600 mb-2">Theme Preference</label>
+                  <select id="themePreference" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    ${['Minimalist', 'Gradient', 'Glassmorphism', 'Neon', 'Terminal'].map(t => 
+                      `<option value="${t}" ${f.themePreference === t ? 'selected' : ''}>${t}</option>`
+                    ).join('')}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="glass rounded-2xl shadow-2xl p-8 max-w-3xl mx-auto fade-in">
+          <div class="mb-8">
+            <div class="flex justify-between mb-2">
+              ${[1, 2, 3, 4, 5].map(step => `
+                <div class="w-2 h-2 rounded-full ${state.formStep >= step ? 'bg-blue-500' : 'bg-gray-300'}"></div>
+              `).join('')}
+            </div>
+            <p class="text-gray-500 text-sm">Step ${state.formStep} of 5</p>
+          </div>
+          ${state.error ? `<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">${state.error}</div>` : ''}
+          ${formContent}
+          <div class="flex justify-between mt-8">
+            <button onclick="prevStep()" class="px-6 py-3 rounded-lg font-medium ${state.formStep === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}">
+              Previous
+            </button>
+            <button onclick="nextStep()" class="px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600">
+              ${state.loading ? 'Saving...' : state.formStep === 5 ? 'Generate Templates' : 'Next'}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGallery() {
+      return `
+        <button onclick="goBack(1)" class="flex items-center gap-2 text-white/80 hover:text-white mb-6">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          Back to Form
+        </button>
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-bold text-white mb-2">Choose Your Template</h2>
+          <p class="text-purple-200">Select a template for your portfolio</p>
+        </div>
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          ${templates.map(t => `
+            <div onclick="selectTemplate('${t.id}')" class="template-card bg-white rounded-xl overflow-hidden shadow-xl cursor-pointer transition-all duration-300 hover:ring-4 hover:ring-blue-500">
+              <div class="h-48 bg-gradient-to-br ${t.id === 'Terminal' ? 'from-gray-900 to-black' : t.id === 'Glassmorphism' ? 'from-purple-900 to-blue-900' : t.id === 'Sidebar' ? 'from-indigo-900 to-purple-900' : t.id === 'Gradient' ? 'from-pink-600 to-purple-600' : 'from-gray-100 to-white'} p-6 flex items-center justify-center">
+                <div class="text-white text-center">
+                  <div class="text-4xl mb-2">${t.id === 'Terminal' ? '>_' : t.id === 'Glassmorphism' ? '◐' : t.id === 'Sidebar' ? '☰' : t.id === 'Gradient' ? '★' : '◇'}</div>
+                </div>
+              </div>
+              <div class="p-4">
+                <h3 class="font-semibold text-gray-800">${t.name}</h3>
+                <p class="text-gray-500 text-sm mt-1">${t.desc}</p>
+                <button class="mt-4 w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Select Template</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderDeploy() {
+      const templateName = templates.find(t => t.id === state.selectedTemplate)?.name || state.selectedTemplate;
+      return `
+        <button onclick="goBack(2)" class="flex items-center gap-2 text-white/80 hover:text-white mb-6">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          Back to Templates
+        </button>
+        <div class="grid gap-8 lg:grid-cols-2">
+          <div class="glass rounded-2xl shadow-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Deploy to GitHub</h2>
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+              <h3 class="font-semibold text-blue-800 mb-2">Selected Template</h3>
+              <p class="text-blue-600">${templateName}</p>
+            </div>
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 class="font-semibold text-gray-700 mb-2">Portfolio Summary</h3>
+              <p class="text-gray-600"><strong>Name:</strong> ${state.formData.fullName || 'Not specified'}</p>
+              <p class="text-gray-600"><strong>Title:</strong> ${state.formData.professionalTitle || 'Not specified'}</p>
+              <p class="text-gray-600"><strong>Skills:</strong> ${state.formData.skills.length} skills</p>
+              <p class="text-gray-600"><strong>Projects:</strong> ${state.formData.projects.length} projects</p>
+            </div>
+            ${state.error ? `<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">${state.error}</div>` : ''}
+            <div class="space-y-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">GitHub Personal Access Token</label>
+                <div class="flex gap-3">
+                  <input type="password" id="githubToken" value="${state.githubToken}" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg" placeholder="ghp_xxxxxxxxxxxx">
+                  <button onclick="verifyToken()" class="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Verify</button>
+                </div>
+                ${state.tokenValid === true ? `<p class="mt-2 text-sm text-green-600">✓ Connected as ${state.username}</p>` : ''}
+                ${state.tokenValid === false ? `<p class="mt-2 text-sm text-red-600">Invalid token</p>` : ''}
+                <p class="mt-2 text-xs text-gray-500">Need a token? GitHub Settings → Developer settings → Personal access tokens</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Repository Name</label>
+                <input type="text" id="repoName" value="${state.repoName}" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="my-portfolio">
+              </div>
+              <button onclick="deploy()" ${state.loading || state.tokenValid !== true ? 'disabled' : ''} class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 disabled:opacity-50">
+                ${state.loading ? 'Deploying...' : 'Deploy Portfolio'}
+              </button>
+            </div>
+          </div>
+          <div class="glass rounded-2xl shadow-2xl p-8">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">What happens next?</h3>
+            <ol class="space-y-4">
+              <li class="flex gap-4">
+                <span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">1</span>
+                <div><p class="font-medium text-gray-800">Create Repository</p><p class="text-gray-500 text-sm">A new public GitHub repository will be created</p></div>
+              </li>
+              <li class="flex gap-4">
+                <span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">2</span>
+                <div><p class="font-medium text-gray-800">Generate Files</p><p class="text-gray-500 text-sm">HTML, CSS, and JS will be generated and committed</p></div>
+              </li>
+              <li class="flex gap-4">
+                <span class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">3</span>
+                <div><p class="font-medium text-gray-800">Enable GitHub Pages</p><p class="text-gray-500 text-sm">Your site will be deployed and available live</p></div>
+              </li>
+            </ol>
+            <div class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p class="text-yellow-800 text-sm"><strong>Note:</strong> Your portfolio is self-contained and will work forever!</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSuccess() {
+      const result = state.deploymentResult;
+      return `
+        <div class="text-center fade-in">
+          <div class="glass rounded-2xl shadow-2xl p-12 max-w-2xl mx-auto">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Congratulations!</h2>
+            <p class="text-gray-600 mb-8">Your portfolio has been deployed successfully!</p>
+            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8">
+              <p class="text-sm text-gray-500 mb-2">Your live portfolio:</p>
+              <a href="${result.liveUrl}" target="_blank" class="text-xl font-semibold text-blue-600 hover:text-blue-700 break-all">${result.liveUrl}</a>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <a href="${result.liveUrl}" target="_blank" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-600 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                Visit My Live Portfolio
+              </a>
+              <button onclick="copyLink('${result.liveUrl}')" class="px-8 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Copy Link
+              </button>
+            </div>
+            <div class="border-t border-gray-200 pt-8">
+              <a href="${result.repoUrl}" target="_blank" class="text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                View on GitHub
+              </a>
+            </div>
+          </div>
+          <div class="mt-8 bg-green-50 border border-green-200 rounded-xl p-6 max-w-2xl mx-auto">
+            <h3 class="font-semibold text-green-800 mb-3 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              Portfolio Checklist
+            </h3>
+            <ul class="text-sm text-green-700 space-y-2 text-left">
+              <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Self-contained - works offline</li>
+              <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Responsive design</li>
+              <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> GitHub Pages enabled</li>
+              <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Custom brand color applied</li>
+            </ul>
+          </div>
+          <button onclick="resetFlow()" class="mt-8 px-8 py-4 text-white hover:text-white/80 transition">Create Another Portfolio</button>
+        </div>
+      `;
+    }
+
+    function attachListeners() {
+      document.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener('change', handleInputChange);
+        el.addEventListener('input', handleInputChange);
+      });
+    }
+
+    function handleInputChange(e) {
+      const id = e.target.id;
+      const val = e.target.value;
+      
+      if (id === 'fullName') state.formData.fullName = val;
+      else if (id === 'professionalTitle') state.formData.professionalTitle = val;
+      else if (id === 'bio') state.formData.bio = val;
+      else if (id === 'profileImage') state.formData.profileImage = val;
+      else if (id === 'github') state.formData.socialLinks.github = val;
+      else if (id === 'linkedin') state.formData.socialLinks.linkedin = val;
+      else if (id === 'twitter') state.formData.socialLinks.twitter = val;
+      else if (id === 'blog') state.formData.socialLinks.blog = val;
+      else if (id === 'resumeUrl') state.formData.resumeUrl = val;
+      else if (id === 'skillInput') state.skillInput = val;
+      else if (id === 'brandColor') state.formData.brandColor = val;
+      else if (id === 'themePreference') state.formData.themePreference = val;
+      else if (id === 'githubToken') state.githubToken = val;
+      else if (id === 'repoName') state.repoName = val;
+      else if (id === 'eduDegree') state.formData.education.degree = val;
+      else if (id === 'eduInstitution') state.formData.education.institution = val;
+      else if (id === 'eduYear') state.formData.education.graduationYear = val;
+      else if (id.startsWith('projName')) {
+        const i = parseInt(id.replace('projName', ''));
+        state.formData.projects[i].name = val;
+      } else if (id.startsWith('projDesc')) {
+        const i = parseInt(id.replace('projDesc', ''));
+        state.formData.projects[i].description = val;
+      } else if (id.startsWith('projLive')) {
+        const i = parseInt(id.replace('projLive', ''));
+        state.formData.projects[i].liveUrl = val;
+      } else if (id.startsWith('projGithub')) {
+        const i = parseInt(id.replace('projGithub', ''));
+        state.formData.projects[i].githubUrl = val;
+      } else if (id.startsWith('expTitle')) {
+        const i = parseInt(id.replace('expTitle', ''));
+        state.formData.experience[i].jobTitle = val;
+      } else if (id.startsWith('expCompany')) {
+        const i = parseInt(id.replace('expCompany', ''));
+        state.formData.experience[i].company = val;
+      } else if (id.startsWith('expStart')) {
+        const i = parseInt(id.replace('expStart', ''));
+        state.formData.experience[i].startDate = val;
+      } else if (id.startsWith('expEnd')) {
+        const i = parseInt(id.replace('expEnd', ''));
+        state.formData.experience[i].endDate = val;
+      } else if (id.startsWith('expBullet')) {
+        const [i, j] = id.replace('expBullet', '').split('_').map(Number);
+        state.formData.experience[i].bullets[j] = val;
+      }
+    }
+
+    function addSkill() {
+      if (state.skillInput.trim()) {
+        state.formData.skills.push(state.skillInput.trim());
+        state.skillInput = '';
+        render();
+      }
+    }
+
+    function removeSkill(index) {
+      state.formData.skills.splice(index, 1);
+      render();
+    }
+
+    function addProject() {
+      state.formData.projects.push({ name: '', description: '', liveUrl: '', githubUrl: '' });
+      render();
+    }
+
+    function removeProject(index) {
+      state.formData.projects.splice(index, 1);
+      render();
+    }
+
+    function addExperience() {
+      state.formData.experience.push({ jobTitle: '', company: '', startDate: '', endDate: '', bullets: [''] });
+      render();
+    }
+
+    function removeExperience(index) {
+      state.formData.experience.splice(index, 1);
+      render();
+    }
+
+    function addBullet(expIndex) {
+      state.formData.experience[expIndex].bullets.push('');
+      render();
+    }
+
+    function prevStep() {
+      if (state.formStep > 1) {
+        state.formStep--;
+        render();
+      }
+    }
+
+    function nextStep() {
+      state.error = '';
+      if (state.formStep < 5) {
+        state.formStep++;
+        render();
+      } else {
+        state.step = 2;
+        render();
+      }
+    }
+
+    function goBack(step) {
+      state.step = step;
+      render();
+    }
+
+    function selectTemplate(templateId) {
+      state.selectedTemplate = templateId;
+      state.step = 3;
+      render();
+    }
+
+    async function verifyToken() {
+      if (!state.githubToken) {
+        state.error = 'Please enter your GitHub token';
+        render();
+        return;
+      }
+      state.loading = true;
+      state.error = '';
+      render();
+      
+      try {
+        const res = await fetch(`${API_URL}/github/verify-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ githubToken: state.githubToken })
+        });
+        const data = await res.json();
+        if (data.valid) {
+          state.tokenValid = true;
+          state.username = data.username;
+        } else {
+          state.tokenValid = false;
+          state.error = data.error || 'Invalid token';
+        }
+      } catch (e) {
+        state.tokenValid = false;
+        state.error = 'Failed to verify token';
+      }
+      
+      state.loading = false;
+      render();
+    }
+
+    async function deploy() {
+      if (!state.githubToken || !state.repoName) {
+        state.error = 'Please fill in all fields';
+        render();
+        return;
+      }
+      
+      if (!/^[a-zA-Z0-9-_]+$/.test(state.repoName)) {
+        state.error = 'Repository name can only contain letters, numbers, hyphens, and underscores';
+        render();
+        return;
+      }
+      
+      state.loading = true;
+      state.error = '';
+      render();
+      
+      try {
+        const res = await fetch(`${API_URL}/github/deploy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            portfolioData: state.formData,
+            githubToken: state.githubToken,
+            repoName: state.repoName,
+            templateType: state.selectedTemplate
+          })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Deployment failed');
+        
+        state.deploymentResult = data;
+        state.step = 4;
+      } catch (e) {
+        state.error = e.message;
+      }
+      
+      state.loading = false;
+      render();
+    }
+
+    function copyLink(url) {
+      navigator.clipboard.writeText(url);
+      alert('Link copied!');
+    }
+
+    function resetFlow() {
+      state.step = 1;
+      state.formStep = 1;
+      state.formData = {
+        fullName: '', professionalTitle: '', bio: '', profileImage: '',
+        socialLinks: { github: '', linkedin: '', twitter: '', blog: '' },
+        skills: [], projects: [{ name: '', description: '', liveUrl: '', githubUrl: '' }],
+        experience: [{ jobTitle: '', company: '', startDate: '', endDate: '', bullets: [''] }],
+        education: { degree: '', institution: '', graduationYear: '' },
+        resumeUrl: '', brandColor: '#3B82F6', themePreference: 'Minimalist'
+      };
+      state.selectedTemplate = null;
+      state.githubToken = '';
+      state.repoName = '';
+      state.tokenValid = null;
+      state.deploymentResult = null;
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

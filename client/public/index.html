@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="description" content="AutoPortfolio Builder - Create stunning developer portfolios in minutes" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AutoPortfolio Builder</title>
+    <style>
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+      .step-indicator { transition: all 0.3s ease; }
+      .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+      .template-card:hover { transform: translateY(-4px); }
+      .btn-primary { transition: all 0.2s ease; }
+      .btn-primary:hover { transform: scale(1.02); }
+      .iframe-container { position: relative; overflow: hidden; }
+      .iframe-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 2px solid transparent;
+        border-radius: 0.75rem;
+        pointer-events: none;
+        transition: border-color 0.2s;
+      }
+      .template-card.selected .iframe-container::before {
+        border-color: #3B82F6;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
