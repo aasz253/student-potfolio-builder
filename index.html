@@ -24,14 +24,21 @@
       formData: {
         fullName: 'Alex Johnson',
         professionalTitle: 'Full Stack Developer',
-        bio: 'Passionate developer with 5+ years building scalable web applications.',
         profileImage: '',
-        socialLinks: { github: 'https://github.com/alex', linkedin: 'https://linkedin.com/in/alex' },
-        skills: ['React', 'Node.js', 'TypeScript', 'Python', 'AWS'],
-        projects: [{ name: 'E-Commerce Platform', description: 'Full-stack solution with real-time inventory', liveUrl: 'https://shop.demo.com', githubUrl: 'https://github.com/alex/shop' }],
-        experience: [{ jobTitle: 'Senior Developer', company: 'Tech Corp', startDate: 'Jan 2021', endDate: 'Present', bullets: ['Led microservices architecture', 'Reduced API latency by 40%'] }],
-        education: { degree: 'B.S. Computer Science', institution: 'State University', graduationYear: '2018' },
-        brandColor: '#3B82F6'
+        bio: 'Passionate developer with 5+ years building scalable web applications. I love creating beautiful and functional digital experiences.',
+        tagline: 'Building digital experiences that matter',
+        location: 'San Francisco, CA',
+        email: 'alex@example.com',
+        socialLinks: { github: 'https://github.com/alex', linkedin: 'https://linkedin.com/in/alex', twitter: 'https://twitter.com/alex', instagram: '', dribbble: '' },
+        skills: ['React', 'Node.js', 'TypeScript', 'Python', 'AWS', 'Docker', 'MongoDB', 'GraphQL'],
+        skillsCategories: { frontend: ['React', 'Vue', 'TypeScript'], backend: ['Node.js', 'Python', 'Go'], tools: ['AWS', 'Docker', 'Git'] },
+        projects: [{ name: 'E-Commerce Platform', description: 'Full-stack e-commerce solution with real-time inventory management and payment processing', liveUrl: 'https://shop.demo.com', githubUrl: 'https://github.com/alex/shop', image: '' }],
+        experience: [{ jobTitle: 'Senior Developer', company: 'Tech Corp', startDate: 'Jan 2021', endDate: 'Present', bullets: ['Led development of microservices architecture', 'Reduced API latency by 40%', 'Mentored junior developers'] }],
+        education: { degree: 'B.S. Computer Science', institution: 'Stanford University', graduationYear: '2018', gpa: '3.8' },
+        testimonials: [{ name: 'Sarah Chen', role: 'CTO at TechStart', text: 'Alex is one of the best developers I have worked with. His attention to detail and problem-solving skills are exceptional.', image: '' }, { name: 'Mike Johnson', role: 'Product Manager', text: 'Working with Alex was a pleasure. He always delivered on time and exceeded expectations.', image: '' }],
+        services: [{ title: 'Web Development', description: 'Custom web applications built with modern technologies', icon: 'code' }, { title: 'API Development', description: 'RESTful and GraphQL APIs for your applications', icon: 'api' }],
+        brandColor: '#3B82F6',
+        availability: 'Available for freelance'
       },
       formStep: 1,
       selectedTemplate: null,
@@ -53,7 +60,7 @@
 
     function render() {
       var app = document.getElementById('app');
-      var content = '<header class="py-6 px-4"><div class="max-w-7xl mx-auto"><h1 class="text-3xl font-bold text-white">AutoPortfolio Builder</h1><p class="text-purple-200 text-sm mt-1">Create & Preview Your Portfolio</p></div></header>';
+      var content = '<header class="py-6 px-4"><div class="max-w-7xl mx-auto"><h1 class="text-3xl font-bold text-white">AutoPortfolio Builder</h1><p class="text-purple-200 text-sm mt-1">Create Your Professional Portfolio</p></div></header>';
       content += '<main class="px-4 pb-12"><div class="max-w-6xl mx-auto">';
       if (state.step === 1) content += renderForm();
       else if (state.step === 2) content += renderGallery();
@@ -69,18 +76,20 @@
       var form = '';
       
       if (s === 1) {
-        form = '<h2 class="text-2xl font-bold text-white mb-6">Basic Info</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Full Name</label><input type="text" id="fullName" value="' + f.fullName + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Title</label><input type="text" id="professionalTitle" value="' + f.professionalTitle + '" class="w-full px-4 py-3 rounded-lg"></div></div><div class="mb-4"><label class="block text-sm text-purple-200 mb-1">Bio</label><textarea id="bio" rows="3" class="w-full px-4 py-3 rounded-lg">' + f.bio + '</textarea></div>';
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Basic Info</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Full Name</label><input type="text" id="fullName" value="' + f.fullName + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Professional Title</label><input type="text" id="professionalTitle" value="' + f.professionalTitle + '" class="w-full px-4 py-3 rounded-lg"></div></div><div class="mb-4"><label class="block text-sm text-purple-200 mb-1">Tagline</label><input type="text" id="tagline" value="' + (f.tagline || '') + '" class="w-full px-4 py-3 rounded-lg" placeholder="Your catchy tagline"></div><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Location</label><input type="text" id="location" value="' + (f.location || '') + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Email</label><input type="email" id="email" value="' + (f.email || '') + '" class="w-full px-4 py-3 rounded-lg"></div></div><div class="mb-4"><label class="block text-sm text-purple-200 mb-1">Bio (About Section)</label><textarea id="bio" rows="4" class="w-full px-4 py-3 rounded-lg">' + f.bio + '</textarea></div><div class="mb-4"><label class="block text-sm text-purple-200 mb-1">Brand Color</label><input type="color" id="brandColor" value="' + f.brandColor + '" class="w-full h-12 rounded-lg cursor-pointer"></div>';
       } else if (s === 2) {
-        form = '<h2 class="text-2xl font-bold text-white mb-6">Social Links</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">GitHub URL</label><input type="url" id="github" value="' + f.socialLinks.github + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">LinkedIn URL</label><input type="url" id="linkedin" value="' + f.socialLinks.linkedin + '" class="w-full px-4 py-3 rounded-lg"></div></div>';
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Social Links</h2><div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">GitHub</label><input type="url" id="github" value="' + f.socialLinks.github + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">LinkedIn</label><input type="url" id="linkedin" value="' + f.socialLinks.linkedin + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Twitter</label><input type="url" id="twitter" value="' + (f.socialLinks.twitter || '') + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Instagram</label><input type="url" id="instagram" value="' + (f.socialLinks.instagram || '') + '" class="w-full px-4 py-3 rounded-lg"></div></div><div><label class="block text-sm text-purple-200 mb-1">Dribbble</label><input type="url" id="dribbble" value="' + (f.socialLinks.dribbble || '') + '" class="w-full px-4 py-3 rounded-lg"></div>';
       } else if (s === 3) {
-        form = '<h2 class="text-2xl font-bold text-white mb-6">Skills</h2><div class="flex gap-3 mb-4"><input type="text" id="skillInput" class="flex-1 px-4 py-3 rounded-lg" placeholder="Type skill"><button onclick="addSkill()" class="px-6 py-3 bg-green-500 text-white rounded-lg">Add</button></div><div class="flex flex-wrap gap-2">' + f.skills.map(function(skill, i) { return '<span class="px-4 py-2 bg-purple-500/30 text-white rounded-full">' + skill + '<button onclick="removeSkill(' + i + ')" class="ml-2 text-purple-300 hover:text-white">x</button></span>'; }).join('') + '</div>';
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Skills</h2><div class="flex gap-3 mb-4"><input type="text" id="skillInput" class="flex-1 px-4 py-3 rounded-lg" placeholder="Add a skill"><button onclick="addSkill()" class="px-6 py-3 bg-green-500 text-white rounded-lg">Add</button></div><div class="flex flex-wrap gap-2 mb-6">' + f.skills.map(function(skill, i) { return '<span class="px-4 py-2 bg-purple-500/30 text-white rounded-full">' + skill + '<button onclick="removeSkill(' + i + ')" class="ml-2 text-purple-300 hover:text-white">x</button></span>'; }).join('') + '</div><h3 class="text-lg font-bold text-white mb-4">Services Offered</h3><div id="services">' + (f.services || []).map(function(s, i) { return '<div class="glass p-4 rounded-xl mb-2"><input type="text" id="serviceTitle' + i + '" value="' + s.title + '" class="w-full px-3 py-2 rounded mb-2" placeholder="Service Title"><textarea id="serviceDesc' + i + '" rows="2" class="w-full px-3 py-2 rounded" placeholder="Service Description">' + s.description + '</textarea></div>'; }).join('') + '</div><button onclick="addService()" class="w-full py-3 border-2 border-dashed border-white/30 text-white/70 rounded-lg hover:border-white/50 mt-2">+ Add Service</button>';
       } else if (s === 4) {
         form = '<h2 class="text-2xl font-bold text-white mb-6">Projects</h2>' + f.projects.map(function(p, i) { return '<div class="glass p-4 rounded-xl mb-4"><input type="text" id="projName' + i + '" value="' + p.name + '" class="w-full px-3 py-2 rounded mb-2" placeholder="Project Name"><textarea id="projDesc' + i + '" rows="2" class="w-full px-3 py-2 rounded mb-2" placeholder="Description">' + p.description + '</textarea><div class="grid grid-cols-2 gap-2"><input type="url" id="projLive' + i + '" value="' + p.liveUrl + '" class="px-3 py-2 rounded" placeholder="Live URL"><input type="url" id="projGithub' + i + '" value="' + p.githubUrl + '" class="px-3 py-2 rounded" placeholder="GitHub URL"></div></div>'; }).join('') + '<button onclick="addProject()" class="w-full py-3 border-2 border-dashed border-white/30 text-white/70 rounded-lg hover:border-white/50">+ Add Project</button>';
       } else if (s === 5) {
-        form = '<h2 class="text-2xl font-bold text-white mb-6">Experience & Style</h2>' + f.experience.map(function(exp, i) { return '<div class="glass p-4 rounded-xl mb-4"><div class="grid grid-cols-2 gap-2 mb-2"><input type="text" id="expTitle' + i + '" value="' + exp.jobTitle + '" class="px-3 py-2 rounded" placeholder="Job Title"><input type="text" id="expCompany' + i + '" value="' + exp.company + '" class="px-3 py-2 rounded" placeholder="Company"></div></div>'; }).join('') + '<div class="grid gap-4 md:grid-cols-2 mb-4"><div><label class="block text-sm text-purple-200 mb-1">Degree</label><input type="text" id="eduDegree" value="' + f.education.degree + '" class="w-full px-4 py-3 rounded-lg"></div><div><label class="block text-sm text-purple-200 mb-1">Institution</label><input type="text" id="eduInstitution" value="' + f.education.institution + '" class="w-full px-4 py-3 rounded-lg"></div></div><div><label class="block text-sm text-purple-200 mb-1">Brand Color</label><input type="color" id="brandColor" value="' + f.brandColor + '" class="w-full h-12 rounded-lg cursor-pointer"></div>';
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Experience & Education</h2>' + f.experience.map(function(exp, i) { return '<div class="glass p-4 rounded-xl mb-4"><div class="grid grid-cols-2 gap-2 mb-2"><input type="text" id="expTitle' + i + '" value="' + exp.jobTitle + '" class="px-3 py-2 rounded" placeholder="Job Title"><input type="text" id="expCompany' + i + '" value="' + exp.company + '" class="px-3 py-2 rounded" placeholder="Company"></div><div class="grid grid-cols-2 gap-2 mb-2"><input type="text" id="expStart' + i + '" value="' + exp.startDate + '" class="px-3 py-2 rounded" placeholder="Start Date"><input type="text" id="expEnd' + i + '" value="' + exp.endDate + '" class="px-3 py-2 rounded" placeholder="End Date"></div></div>'; }).join('') + '<button onclick="addExperience()" class="mb-6 text-blue-300 hover:text-white">+ Add Experience</button><h3 class="text-lg font-bold text-white mb-4">Education</h3><div class="glass p-4 rounded-xl"><div class="grid gap-4 md:grid-cols-2 mb-4"><input type="text" id="eduDegree" value="' + f.education.degree + '" class="px-4 py-3 rounded-lg" placeholder="Degree"><input type="text" id="eduInstitution" value="' + f.education.institution + '" class="px-4 py-3 rounded-lg" placeholder="Institution"></div><input type="text" id="eduYear" value="' + f.education.graduationYear + '" class="w-full px-4 py-3 rounded-lg mb-4" placeholder="Graduation Year"></div>';
+      } else if (s === 6) {
+        form = '<h2 class="text-2xl font-bold text-white mb-6">Testimonials & Contact</h2><h3 class="text-lg font-bold text-white mb-4">Testimonials</h3>' + f.testimonials.map(function(t, i) { return '<div class="glass p-4 rounded-xl mb-4"><input type="text" id="testName' + i + '" value="' + t.name + '" class="w-full px-3 py-2 rounded mb-2" placeholder="Reviewer Name"><input type="text" id="testRole' + i + '" value="' + t.role + '" class="w-full px-3 py-2 rounded mb-2" placeholder="Role/Company"><textarea id="testText' + i + '" rows="2" class="w-full px-3 py-2 rounded" placeholder="Testimonial text">' + t.text + '</textarea></div>'; }).join('') + '<button onclick="addTestimonial()" class="mb-6 text-blue-300 hover:text-white">+ Add Testimonial</button><h3 class="text-lg font-bold text-white mb-4">Availability Status</h3><input type="text" id="availability" value="' + (f.availability || 'Available for freelance') + '" class="w-full px-4 py-3 rounded-lg mb-4" placeholder="e.g. Available for freelance, Open to work">';
       }
       
-      return '<div class="glass rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto fade-in"><div class="mb-6"><div class="flex gap-2 mb-2">' + [1,2,3,4,5].map(function(x) { return '<div class="w-3 h-3 rounded-full ' + (state.formStep >= x ? 'bg-blue-500' : 'bg-gray-300') + '"></div>'; }).join('') + '</div><p class="text-gray-500 text-sm">Step ' + state.formStep + ' of 5</p></div>' + form + '<div class="flex justify-between mt-6"><button onclick="prevStep()" class="px-6 py-3 ' + (s === 1 ? 'text-gray-400' : 'text-white hover:bg-white/10') + ' rounded-lg">' + (s === 1 ? '' : 'Previous') + '</button><button onclick="nextStep()" class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">' + (s === 5 ? 'Choose Template' : 'Next') + '</button></div></div>';
+      return '<div class="glass rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto fade-in"><div class="mb-6"><div class="flex gap-2 mb-2">' + [1,2,3,4,5,6].map(function(x) { return '<div class="w-3 h-3 rounded-full ' + (state.formStep >= x ? 'bg-blue-500' : 'bg-gray-300') + '"></div>'; }).join('') + '</div><p class="text-gray-500 text-sm">Step ' + state.formStep + ' of 6</p></div>' + form + '<div class="flex justify-between mt-6"><button onclick="prevStep()" class="px-6 py-3 ' + (s === 1 ? 'text-gray-400' : 'text-white hover:bg-white/10') + ' rounded-lg">' + (s === 1 ? '' : 'Previous') + '</button><button onclick="nextStep()" class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600">' + (s === 6 ? 'Choose Template' : 'Next') + '</button></div></div>';
     }
 
     function renderGallery() {
@@ -105,12 +114,136 @@
       var exp = d.experience || [];
       var social = d.socialLinks || {};
       var edu = d.education || {};
+      var testimonials = d.testimonials || [];
+      var services = d.services || [];
       
-      var html = '<!DOCTYPE html>\n<html lang="en>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>' + d.fullName + ' | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <div class="container">\n    <header class="hero">\n      <div class="avatar">' + d.fullName.charAt(0) + '</div>\n      <h1>' + d.fullName + '</h1>\n      <p class="title">' + d.professionalTitle + '</p>\n      <p class="bio">' + d.bio + '</p>\n      <div class="social">\n        <a href="' + social.github + '">GitHub</a>\n        <a href="' + social.linkedin + '">LinkedIn</a>\n      </div>\n    </header>\n    <section class="skills-section">\n      <h2>Skills</h2>\n      <div class="skills">' + skills.map(function(s){return '<span class="skill">' + s + '</span>';}).join('') + '</div>\n    </section>\n    <section class="exp-section">\n      <h2>Experience</h2>' + exp.map(function(e){return '<div class="exp-card"><h3>' + e.jobTitle + '</h3><p class="company">' + e.company + '</p><p class="period">' + e.startDate + ' - ' + e.endDate + '</p></div>';}).join('') + '\n    </section>\n    <section class="projects-section">\n      <h2>Projects</h2>\n      <div class="projects">' + projects.map(function(p){return '<div class="project"><h3>' + p.name + '</h3><p>' + p.description + '</p><div class="links"><a href="' + p.liveUrl + '">Live</a><a href="' + p.githubUrl + '">Code</a></div></div>';}).join('') + '</div>\n    </section>\n    <section class="edu-section">\n      <h2>Education</h2>\n      <div class="edu-card"><h3>' + edu.degree + '</h3><p>' + edu.institution + '</p></div>\n    </section>\n  </div>\n  <script src="script.js"><\/script>\n</body>\n</html>';
+      var themes = {
+        Terminal: {
+          bg: 'linear-gradient(180deg,#0c0c0c 0%,#1a1a2e 100%)',
+          text: '#00ff00',
+          cardBg: '#0a0a0a',
+          cardBorder: '#00ff0066',
+          navBg: '#0a0a0a',
+          navText: '#00ff00',
+          font: 'font-mono'
+        },
+        Glassmorphism: {
+          bg: 'linear-gradient(135deg,rgba(139,92,246,0.4),rgba(59,130,246,0.4))',
+          text: '#ffffff',
+          cardBg: 'rgba(255,255,255,0.1)',
+          cardBorder: 'rgba(255,255,255,0.2)',
+          navBg: 'rgba(255,255,255,0.1)',
+          navText: '#ffffff',
+          font: ''
+        },
+        Sidebar: {
+          bg: '#f8fafc',
+          text: '#1e293b',
+          cardBg: '#ffffff',
+          cardBorder: '#e2e8f0',
+          navBg: '#1e293b',
+          navText: '#ffffff',
+          font: ''
+        },
+        Gradient: {
+          bg: 'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6)',
+          text: '#ffffff',
+          cardBg: 'rgba(255,255,255,0.15)',
+          cardBorder: 'rgba(255,255,255,0.3)',
+          navBg: 'rgba(0,0,0,0.1)',
+          navText: '#ffffff',
+          font: ''
+        },
+        Minimalist: {
+          bg: '#fafafa',
+          text: '#374151',
+          cardBg: '#ffffff',
+          cardBorder: '#f3f4f6',
+          navBg: '#ffffff',
+          navText: '#374151',
+          font: ''
+        },
+        Magazine: {
+          bg: '#fef3c7',
+          text: '#78350f',
+          cardBg: '#fffbeb',
+          cardBorder: '#fde68a',
+          navBg: '#92400e',
+          navText: '#ffffff',
+          font: 'font-serif'
+        },
+        Cyberpunk: {
+          bg: 'linear-gradient(135deg,#0f172a,#1e1b4b,#312e81)',
+          text: '#22d3d3',
+          cardBg: 'rgba(6,182,212,0.1)',
+          cardBorder: '#22d3d366',
+          navBg: 'rgba(0,0,0,0.5)',
+          navText: '#22d3d3',
+          font: ''
+        },
+        Vintage: {
+          bg: '#fef3e2',
+          text: '#78350f',
+          cardBg: '#fffbf5',
+          cardBorder: '#fed7aa',
+          navBg: '#92400e',
+          navText: '#ffffff',
+          font: 'font-serif'
+        },
+        Neobrutalism: {
+          bg: '#fdf2f8',
+          text: '#831843',
+          cardBg: '#ffffff',
+          cardBorder: '#000000',
+          navBg: '#f43f5e',
+          navText: '#ffffff',
+          font: ''
+        },
+        Startup: {
+          bg: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
+          text: '#ffffff',
+          cardBg: 'rgba(255,255,255,0.15)',
+          cardBorder: 'rgba(255,255,255,0.25)',
+          navBg: 'rgba(0,0,0,0.2)',
+          navText: '#ffffff',
+          font: ''
+        }
+      };
       
-      var css = '*{margin:0;padding:0;box-sizing:border-box}:root{--accent:' + accent + ';--bg:#f8fafc;--text:#1a1a2e;--muted:#64748b}.container{max-width:900px;margin:0 auto;padding:2rem;font-family:system-ui,sans-serif;background:var(--bg);min-height:100vh}.hero{text-align:center;padding:3rem 0;border-bottom:2px solid #e5e5e5;margin-bottom:3rem}.avatar{width:120px;height:120px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:3rem;color:#fff;font-weight:700}h1{font-size:2.5rem;font-weight:700;margin-bottom:0.5rem;color:var(--text)}.title{font-size:1.25rem;color:var(--accent);font-weight:500;margin-bottom:1rem}.bio{max-width:500px;margin:0 auto 2rem;color:var(--muted);line-height:1.7}.social{display:flex;gap:1rem;justify-content:center}.social a{padding:0.75rem 1.5rem;background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:500}section{margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid #e5e5e5}h2{font-size:1.75rem;font-weight:600;margin-bottom:1.5rem;color:var(--text)}.skills{display:flex;flex-wrap:wrap;gap:0.75rem}.skill{padding:0.5rem 1rem;background:#fff;border:1px solid #e5e5e5;border-radius:50px;font-size:0.9rem;font-weight:500}.exp-card{background:#fff;padding:1.5rem;border-radius:12px;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.exp-card h3{font-size:1.1rem;font-weight:600;margin-bottom:0.25rem;color:var(--text)}.exp-card .company{color:var(--accent);font-weight:500;margin-bottom:0.25rem}.exp-card .period{font-size:0.85rem;color:var(--muted)}.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}.project{background:#fff;padding:1.5rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.project h3{font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;color:var(--text)}.project p{color:var(--muted);margin-bottom:1rem}.project .links{display:flex;gap:1rem}.project a{color:var(--accent);text-decoration:none;font-size:0.9rem;font-weight:500}.edu-card{background:linear-gradient(135deg,var(--accent),#8b5cf6);padding:2rem;border-radius:12px;color:#fff;text-align:center}.edu-card h3{font-size:1.25rem;margin-bottom:0.5rem}.edu-card p{opacity:0.9}';
+      var theme = themes[templateId] || themes.Minimalist;
       
-      var js = "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('a').forEach(function(a){a.setAttribute('target','_blank');a.setAttribute('rel','noopener noreferrer')})});";
+      var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>' + d.fullName + ' | Portfolio</title>\n  <link rel="stylesheet" href="styles.css">\n  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">\n</head>\n<body class="' + theme.font + '">\n  <nav class="navbar">\n    <div class="nav-logo">' + d.fullName.split(' ')[0] + '</div>\n    <div class="nav-links">\n      <a href="#home">Home</a>\n      <a href="#about">About</a>\n      <a href="#skills">Skills</a>\n      <a href="#projects">Projects</a>\n      <a href="#testimonials">Testimonials</a>\n      <a href="#contact">Contact</a>\n    </div>\n  </nav>\n  <section id="home" class="hero">\n    <div class="hero-content">\n      <span class="hero-badge">' + (d.availability || 'Welcome') + '</span>\n      <h1>Hi, I\'m <span class="highlight">' + d.fullName + '</span></h1>\n      <p class="hero-title">' + d.professionalTitle + '</p>\n      <p class="hero-tagline">' + (d.tagline || '') + '</p>\n      <div class="hero-cta">\n        <a href="#projects" class="btn btn-primary">View My Work</a>\n        <a href="#contact" class="btn btn-outline">Contact Me</a>\n      </div>\n    </div>\n  </section>\n  <section id="about" class="section">\n    <div class="container">\n      <h2 class="section-title">About Me</h2>\n      <div class="about-grid">\n        <div class="about-text">\n          <p>' + d.bio + '</p>\n          <div class="about-info">\n            <div class="info-item"><span class="label">Location:</span> ' + (d.location || 'N/A') + '</div>\n            <div class="info-item"><span class="label">Email:</span> ' + (d.email || 'N/A') + '</div>\n          </div>\n        </div>\n        <div class="about-stats">\n          <div class="stat"><span class="stat-number">' + (exp.length + 5) + '+</span><span class="stat-label">Years Experience</span></div>\n          <div class="stat"><span class="stat-number">' + projects.length + '</span><span class="stat-label">Projects</span></div>\n          <div class="stat"><span class="stat-number">' + skills.length + '</span><span class="stat-label">Skills</span></div>\n        </div>\n      </div>\n    </div>\n  </section>\n  <section id="skills" class="section bg-light">\n    <div class="container">\n      <h2 class="section-title">Skills</h2>\n      <div class="skills-grid">' + skills.map(function(s) { return '<span class="skill-tag">' + s + '</span>'; }).join('') + '</div>\n    </div>\n  </section>\n  <section id="projects" class="section">\n    <div class="container">\n      <h2 class="section-title">Projects</h2>\n      <div class="projects-grid">' + projects.map(function(p) { return '<div class="project-card"><h3>' + p.name + '</h3><p>' + p.description + '</p><div class="project-links"><a href="' + (p.liveUrl || '#') + '" target="_blank">Live Demo</a><a href="' + (p.githubUrl || '#') + '" target="_blank">GitHub</a></div></div>'; }).join('') + '</div>\n    </div>\n  </section>\n  <section id="experience" class="section bg-light">\n    <div class="container">\n      <h2 class="section-title">Experience</h2>\n      <div class="timeline">' + exp.map(function(e) { return '<div class="timeline-item"><h3>' + e.jobTitle + ' at ' + e.company + '</h3><span class="timeline-date">' + e.startDate + ' - ' + e.endDate + '</span></div>'; }).join('') + '</div>\n    </div>\n  </section>\n  <section id="education" class="section">\n    <div class="container">\n      <h2 class="section-title">Education</h2>\n      <div class="edu-card"><h3>' + edu.degree + '</h3><p>' + edu.institution + ' | ' + edu.graduationYear + '</p></div>\n    </div>\n  </section>\n  <section id="testimonials" class="section bg-light">\n    <div class="container">\n      <h2 class="section-title">Testimonials</h2>\n      <div class="testimonials-grid">' + testimonials.map(function(t) { return '<div class="testimonial-card"><p>"' + t.text + '"</p><div class="testimonial-author"><strong>' + t.name + '</strong><span>' + t.role + '</span></div></div>'; }).join('') + '</div>\n    </div>\n  </section>\n  <section id="contact" class="section">\n    <div class="container">\n      <h2 class="section-title">Contact</h2>\n      <div class="contact-info"><p><strong>Email:</strong> ' + (d.email || 'N/A') + '</p><p><strong>Location:</strong> ' + (d.location || 'N/A') + '</p></div>\n      <div class="social-links">' + (social.github ? '<a href="' + social.github + '" target="_blank">GitHub</a>' : '') + (social.linkedin ? '<a href="' + social.linkedin + '" target="_blank">LinkedIn</a>' : '') + (social.twitter ? '<a href="' + social.twitter + '" target="_blank">Twitter</a>' : '') + (social.instagram ? '<a href="' + social.instagram + '" target="_blank">Instagram</a>' : '') + '</div>\n    </div>\n  </section>\n  <footer class="footer">\n    <p>&copy; 2024 ' + d.fullName + '. All rights reserved.</p>\n  </footer>\n  <script src="script.js"></script>\n</body>\n</html>';
+      
+      var cssBase = '*{margin:0;padding:0;box-sizing:border-box}:root{--accent:' + accent + ';--text:' + theme.text + ';--bg:' + theme.bg + '}.container{max-width:1200px;margin:0 auto;padding:0 2rem}body{font-family:Inter,system-ui,sans-serif;color:var(--text);line-height:1.6;background:var(--bg)}';
+      var cssNav = '.navbar{display:flex;justify-content:space-between;align-items:center;padding:1.5rem 2rem;position:fixed;top:0;width:100%;background:' + theme.navBg + ';backdrop-filter:blur(10px);z-index:100}.nav-logo{font-weight:700;font-size:1.25rem;color:' + theme.navText + '}.nav-links{display:flex;gap:2rem}.nav-links a{color:' + theme.navText + ';text-decoration:none;font-size:0.9rem;font-weight:500;transition:color .2s}.nav-links a:hover{color:var(--accent)}';
+      var cssHero = '.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:6rem 2rem 4rem}.hero-content{max-width:800px}.hero-badge{display:inline-block;padding:0.5rem 1rem;background:#dcfce7;color:#166534;font-size:0.85rem;font-weight:600;border-radius:50px;margin-bottom:1.5rem}.hero h1{font-size:3.5rem;font-weight:700;margin-bottom:1rem}.hero .highlight{color:var(--accent)}.hero-title{font-size:1.5rem;opacity:0.8;margin-bottom:0.5rem;font-weight:500}.hero-tagline{font-size:1.25rem;color:var(--accent);margin-bottom:2rem}.hero-cta{display:flex;gap:1rem;justify-content:center}.btn{padding:1rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;transition:all .2s;display:inline-block}.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 12px ' + accent + '40}.btn-outline{border:2px solid var(--accent);color:var(--accent)}.btn-outline:hover{background:var(--accent);color:#fff}';
+      var cssSection = '.section{padding:5rem 0}.section.bg-light{background:rgba(0,0,0,0.05)}.section-title{font-size:2.5rem;font-weight:700;text-align:center;margin-bottom:3rem}';
+      var cssAbout = '.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}@media(max-width:768px){.about-grid{grid-template-columns:1fr}}.about-text p{font-size:1.1rem;line-height:1.8;margin-bottom:1.5rem}.about-info{margin-top:1.5rem}.info-item{margin-bottom:0.5rem}.info-item .label{font-weight:600;margin-right:0.5rem}.about-stats{display:flex;gap:2rem;flex-wrap:wrap}.stat{text-align:center;padding:1.5rem 2rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:12px}.stat-number{font-size:2.5rem;font-weight:700;display:block;color:var(--accent)}.stat-label{font-size:0.9rem;opacity:0.8}';
+      var cssSkills = '.skills-grid{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}.skill-tag{padding:0.75rem 1.5rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:50px;font-size:0.95rem;font-weight:500;transition:all .2s}.skill-tag:hover{transform:translateY(-2px);box-shadow:0 4px 12px ' + accent + '20}';
+      var cssProjects = '.projects-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem}.project-card{padding:2rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:12px;transition:all .2s}.project-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px ' + accent + '20}.project-card h3{font-size:1.25rem;margin-bottom:0.75rem}.project-card p{opacity:0.8;margin-bottom:1rem}.project-links{display:flex;gap:1rem}.project-links a{padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:6px;font-size:0.85rem;text-decoration:none}.project-links a:hover{opacity:0.9}';
+      var cssTimeline = '.timeline{display:flex;flex-direction:column;gap:1.5rem;max-width:600px;margin:0 auto}.timeline-item{padding:1.5rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:12px;border-left:4px solid var(--accent)}.timeline-item h3{font-size:1.1rem;margin-bottom:0.5rem}.timeline-date{font-size:0.85rem;opacity:0.7}';
+      var cssEdu = '.edu-card{padding:2rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:12px;max-width:600px;margin:0 auto;text-align:center}.edu-card h3{font-size:1.25rem;margin-bottom:0.5rem}.edu-card p{opacity:0.8}';
+      var cssTestimonials = '.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem}.testimonial-card{padding:2rem;background:' + theme.cardBg + ';border:1px solid ' + theme.cardBorder + ';border-radius:12px}.testimonial-card p{font-style:italic;margin-bottom:1rem;line-height:1.7}.testimonial-author{text-align:right}.testimonial-author strong{display:block;font-size:0.95rem}.testimonial-author span{font-size:0.85rem;opacity:0.7}';
+      var cssContact = '.contact-info{text-align:center;margin-bottom:2rem}.contact-info p{margin-bottom:0.5rem;font-size:1.1rem}.social-links{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap}.social-links a{padding:0.75rem 1.5rem;background:var(--accent);color:#fff;border-radius:8px;text-decoration:none;font-weight:500}.social-links a:hover{opacity:0.9}';
+      var cssFooter = '.footer{background:' + theme.text + ';color:#fff;padding:2rem;text-align:center}.footer p{opacity:0.8}';
+      
+      var css = cssBase + cssNav + cssHero + cssSection + cssAbout + cssSkills + cssProjects + cssTimeline + cssEdu + cssTestimonials + cssContact + cssFooter;
+      
+      if (templateId === 'Terminal') {
+        css += '.hero{background:linear-gradient(180deg,#0c0c0c 0%,#1a1a2e 100%);}.hero h1{font-family:\'Courier New\',monospace;text-shadow:0 0 10px #00ff0080;}.hero .highlight{color:#00ff00;text-shadow:0 0 20px #00ff00;}.hero-badge{background:#0a0a0a;border:1px solid #00ff0066;color:#00ff00;}.btn-primary{background:#0a0a0a;border:2px solid #00ff00;color:#00ff00;}.btn-outline{border-color:#00ff00;color:#00ff00;}.nav-logo{font-family:\'Courier New\',monospace;text-shadow:0 0 10px #00ff0080;}.nav-links a{font-family:\'Courier New\',monospace;}.section-title{font-family:\'Courier New\',monospace;color:#00ff00;}.stat{border-color:#00ff0066;}.skill-tag{border-color:#00ff0066;}.project-card{border-color:#00ff0066;}.timeline-item{border-color:#00ff0066;border-left-color:#00ff00;}';
+      } else if (templateId === 'Glassmorphism') {
+        css += '.hero{background:linear-gradient(135deg,rgba(139,92,246,0.4),rgba(59,130,246,0.4));min-height:100vh;}.navbar{background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.1)}.stat{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);}.skill-tag{background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);}.project-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);}.testimonial-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);}';
+      } else if (templateId === 'Neobrutalism') {
+        css += '.stat{border:3px solid #000;border-radius:0;box-shadow:4px 4px 0 #000;}.skill-tag{border:2px solid #000;border-radius:0;box-shadow:3px 3px 0 #000;}.project-card{border:3px solid #000;border-radius:0;box-shadow:6px 6px 0 #000;}.testimonial-card{border:2px solid #000;border-radius:0;box-shadow:4px 4px 0 #000;}.btn-primary{border:2px solid #000;box-shadow:4px 4px 0 #000;}.btn-outline{border:2px solid #000;border-radius:0;}.nav-logo{font-weight:900;letter-spacing:-1px;}.section-title{font-weight:900;letter-spacing:-1px;}';
+      } else if (templateId === 'Magazine' || templateId === 'Vintage') {
+        css += '.section-title{font-family:\'Georgia\',serif;font-style:italic;letter-spacing:2px;text-transform:uppercase}.hero h1{font-family:\'Georgia\',serif;font-style:italic}.about-text p{font-family:\'Georgia\',serif;line-height:2;font-size:1.2rem}.stat{border-top:3px solid var(--accent)}.skill-tag{border:none;border-bottom:2px solid var(--accent);border-radius:0;background:transparent}';
+      } else if (templateId === 'Cyberpunk') {
+        css += '.hero{background:linear-gradient(135deg,#0f172a,#1e1b4b,#312e81);}.hero h1{text-shadow:0 0 20px ' + accent + ', 0 0 40px ' + accent + ';}.hero .highlight{color:' + accent + ';text-shadow:0 0 30px ' + accent + ';}.hero-badge{border:1px solid ' + accent + ';color:' + accent + ';animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}.stat{border:1px solid ' + accent + ';box-shadow:0 0 20px ' + accent + '33;}.skill-tag{border:1px solid ' + accent + ';box-shadow:0 0 10px ' + accent + '33;}.project-card{border:1px solid ' + accent + ';}.section-title{text-shadow:0 0 20px ' + accent + ';}.nav-logo{text-shadow:0 0 10px ' + accent + ';}';
+      } else if (templateId === 'Startup') {
+        css += '.hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);}.hero h1{font-weight:800}.hero .highlight{color:#fbbf24}.hero-badge{background:#fbbf24;color:#1e1b1b}.stat{background:rgba(255,255,255,0.1);text-align:center}.skill-tag{background:rgba(255,255,255,0.1)}.project-card{background:rgba(255,255,255,0.1)}.btn-primary{background:#fbbf24;color:#1e1b1b;font-weight:700}.btn-outline{border-color:#fbbf24;color:#fbbf24}';
+      }
+      
+      var js = "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('a[href^=\"#\"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var target=document.querySelector(this.getAttribute('href'));if(target){target.scrollIntoView({behavior:'smooth'})}})})});document.querySelectorAll('a[href^=\"http\"]').forEach(function(a){a.setAttribute('target','_blank');a.setAttribute('rel','noopener noreferrer')});window.addEventListener('scroll',function(){var nav=document.querySelector('.navbar');if(window.scrollY>50){nav.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)'}else{nav.style.boxShadow='none'}})";
       
       return {html: html, css: css, js: js};
     }
@@ -120,9 +253,10 @@
       var accent = d.brandColor || '#3B82F6';
       var skills = d.skills || [];
       var social = d.socialLinks || {};
+      var testimonials = d.testimonials || [];
       var t = templates.find(function(x){return x.id===templateId;});
       
-      var preview = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:' + (t.bg.includes('900') ? '#0f172a' : '#f8fafc') + ';color:#fff;min-height:100vh;padding:2rem}.container{max-width:700px;margin:0 auto;padding:2rem}.avatar{width:100px;height:100px;border-radius:50%;background:' + accent + ';display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2.5rem;color:#fff}h1{font-size:1.75rem;text-align:center;margin-bottom:0.25rem}.title{text-align:center;color:' + accent + ';margin-bottom:1rem}.bio{text-align:center;max-width:400px;margin:0 auto 1.5rem;opacity:0.8}.social{text-align:center;margin-bottom:2rem}.btn{padding:0.5rem 1rem;background:' + accent + ';color:#fff;text-decoration:none;border-radius:6px;margin:0 0.25rem}.section{background:rgba(255,255,255,0.1);padding:1.5rem;border-radius:12px;margin-bottom:1.5rem}h2{color:' + accent + ';margin-bottom:1rem;font-size:1.25rem}.skills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem}.skill{padding:0.25rem 0.75rem;background:rgba(255,255,255,0.1);border-radius:20px;font-size:0.85rem}.card{background:rgba(255,255,255,0.05);padding:1rem;border-radius:8px;margin-bottom:1rem}.card h3{color:' + accent + ';margin-bottom:0.25rem}</style></head><body><div class="container"><div class="avatar">' + d.fullName.charAt(0) + '</div><h1>' + d.fullName + '</h1><p class="title">' + d.professionalTitle + '</p><p class="bio">' + d.bio + '</p><div class="social"><a href="' + social.github + '" class="btn">GitHub</a><a href="' + social.linkedin + '" class="btn">LinkedIn</a></div><div class="section"><h2>Skills</h2><div class="skills">' + skills.map(function(s){return '<span class="skill">' + s + '</span>';}).join('') + '</div></div></div></body></html>';
+      var preview = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}.hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;background:linear-gradient(135deg,' + accent + '22,transparent)}.badge{display:inline-block;padding:0.5rem 1rem;background:#dcfce7;color:#166534;font-size:0.8rem;border-radius:50px;margin-bottom:1rem}h1{font-size:2.5rem;margin-bottom:0.5rem}h1 span{color:' + accent + '}.title{color:#6b7280;margin-bottom:1rem}.container{max-width:900px;margin:0 auto;padding:3rem 2rem}h2{font-size:1.75rem;margin-bottom:2rem;text-align:center}.skills{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center}.skill{padding:0.5rem 1rem;background:#fff;border:1px solid #e5e7eb;border-radius:50px;font-size:0.85rem}.testimonials{display:grid;gap:1.5rem}.testimonial{background:#fff;padding:1.5rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}.testimonial p{color:#6b7280;font-style:italic;margin-bottom:1rem}.testimonial strong{color:' + accent + ';display:block}.testimonial span{font-size:0.85rem;color:#9ca3af}.footer{background:#1a1a1a;color:#fff;padding:2rem;text-align:center}.footer a{color:#fff;margin:0 0.5rem}</style></head><body><div class="hero"><span class="badge">' + (d.availability || 'Welcome') + '</span><h1>Hi, I\'m <span>' + d.fullName + '</span></h1><p class="title">' + d.professionalTitle + '</p></div><div class="container"><h2>About</h2><p style="color:#6b7280;margin-bottom:2rem;line-height:1.8">' + d.bio + '</p><h2>Skills</h2><div class="skills">' + skills.map(function(s){return '<span class="skill">' + s + '</span>';}).join('') + '</div><h2 style="margin-top:3rem">Testimonials</h2><div class="testimonials">' + testimonials.map(function(t){return '<div class="testimonial"><p>"' + t.text + '"</p><strong>' + t.name + '</strong><span>' + t.role + '</span></div>';}).join('') + '</div></div><div class="footer"><p>&copy; 2024 ' + d.fullName + '</p></div></body></html>';
       
       var modal = document.getElementById('modal');
       modal.innerHTML = '<div class="w-full max-w-4xl mx-auto mt-8"><div class="bg-gray-800 rounded-t-xl px-4 py-3 flex justify-between items-center"><span class="text-white font-bold">' + t.name + ' Preview</span><button onclick="closeModal()" class="text-white/70 hover:text-white">Close X</button></div><iframe srcdoc="' + preview.replace(/"/g, '&quot;') + '" class="w-full h-[70vh] bg-white rounded-b-xl border-0"></iframe></div>';
@@ -142,9 +276,7 @@
     function copyCode() {
       var code = generateCode(state.selectedTemplate);
       var full = '<!-- index.html -->\n\n' + code.html + '\n\n<!-- styles.css -->\n\n' + code.css + '\n\n<!-- script.js -->\n\n' + code.js;
-      navigator.clipboard.writeText(full).then(function() {
-        alert('Code copied to clipboard!');
-      });
+      navigator.clipboard.writeText(full).then(function() { alert('Code copied to clipboard!'); });
     }
 
     function downloadCode() {
@@ -169,33 +301,47 @@
       var val = e.target.value;
       if (id === 'fullName') state.formData.fullName = val;
       else if (id === 'professionalTitle') state.formData.professionalTitle = val;
+      else if (id === 'tagline') state.formData.tagline = val;
+      else if (id === 'location') state.formData.location = val;
+      else if (id === 'email') state.formData.email = val;
       else if (id === 'bio') state.formData.bio = val;
+      else if (id === 'brandColor') state.formData.brandColor = val;
       else if (id === 'github') state.formData.socialLinks.github = val;
       else if (id === 'linkedin') state.formData.socialLinks.linkedin = val;
+      else if (id === 'twitter') state.formData.socialLinks.twitter = val;
+      else if (id === 'instagram') state.formData.socialLinks.instagram = val;
+      else if (id === 'dribbble') state.formData.socialLinks.dribbble = val;
+      else if (id === 'availability') state.formData.availability = val;
       else if (id === 'eduDegree') state.formData.education.degree = val;
       else if (id === 'eduInstitution') state.formData.education.institution = val;
-      else if (id === 'brandColor') state.formData.brandColor = val;
+      else if (id === 'eduYear') state.formData.education.graduationYear = val;
+      else if (id === 'skillInput') {}
       else if (id.startsWith('projName')) state.formData.projects[parseInt(id.replace('projName',''))].name = val;
       else if (id.startsWith('projDesc')) state.formData.projects[parseInt(id.replace('projDesc',''))].description = val;
       else if (id.startsWith('projLive')) state.formData.projects[parseInt(id.replace('projLive',''))].liveUrl = val;
       else if (id.startsWith('projGithub')) state.formData.projects[parseInt(id.replace('projGithub',''))].githubUrl = val;
       else if (id.startsWith('expTitle')) state.formData.experience[parseInt(id.replace('expTitle',''))].jobTitle = val;
       else if (id.startsWith('expCompany')) state.formData.experience[parseInt(id.replace('expCompany',''))].company = val;
+      else if (id.startsWith('expStart')) state.formData.experience[parseInt(id.replace('expStart',''))].startDate = val;
+      else if (id.startsWith('expEnd')) state.formData.experience[parseInt(id.replace('expEnd',''))].endDate = val;
+      else if (id.startsWith('testName')) state.formData.testimonials[parseInt(id.replace('testName',''))].name = val;
+      else if (id.startsWith('testRole')) state.formData.testimonials[parseInt(id.replace('testRole',''))].role = val;
+      else if (id.startsWith('testText')) state.formData.testimonials[parseInt(id.replace('testText',''))].text = val;
+      else if (id.startsWith('serviceTitle')) state.formData.services[parseInt(id.replace('serviceTitle',''))].title = val;
+      else if (id.startsWith('serviceDesc')) state.formData.services[parseInt(id.replace('serviceDesc',''))].description = val;
     }
 
     function addSkill() {
       var input = document.getElementById('skillInput');
-      if (input && input.value.trim()) {
-        state.formData.skills.push(input.value.trim());
-        input.value = '';
-        render();
-      }
+      if (input && input.value.trim()) { state.formData.skills.push(input.value.trim()); input.value = ''; render(); }
     }
-
     function removeSkill(i) { state.formData.skills.splice(i, 1); render(); }
     function addProject() { state.formData.projects.push({name:'',description:'',liveUrl:'',githubUrl:''}); render(); }
+    function addExperience() { state.formData.experience.push({jobTitle:'',company:'',startDate:'',endDate:'',bullets:[]}); render(); }
+    function addTestimonial() { state.formData.testimonials.push({name:'',role:'',text:'',image:''}); render(); }
+    function addService() { state.formData.services.push({title:'',description:'',icon:'code'}); render(); }
     function prevStep() { if (state.formStep > 1) { state.formStep--; render(); } }
-    function nextStep() { if (state.formStep < 5) { state.formStep++; } else { state.step = 2; } render(); }
+    function nextStep() { if (state.formStep < 6) { state.formStep++; } else { state.step = 2; } render(); }
     function goBack(step) { state.step = step; render(); }
 
     render();
